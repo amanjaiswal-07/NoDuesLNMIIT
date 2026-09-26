@@ -5,8 +5,8 @@ import RejectedRequests from "../../Request/RejectedRequests";
 import ConfirmModal from "../../Modal/ConfirmModal";
 import ViewDetailsModal from "../../Modal/ViewDetailsModal";
 
-export default function AdministrationRejected() {
-  const { rejected, moveRejectedToApproved } = useOutletContext();
+export default function HODRejected() {
+  const { departmentLabel, rejected, moveRejectedToApproved } = useOutletContext();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [approveTarget, setApproveTarget] = useState(null);
@@ -20,7 +20,7 @@ export default function AdministrationRejected() {
   return (
     <>
       <RejectedRequests
-        title="Administration - Rejected Requests"
+        title={`${departmentLabel} HOD - Requests On Hold`}
         data={rejected}
         onMoveToApproved={(s) => {
           setApproveTarget(s);
@@ -59,7 +59,7 @@ export default function AdministrationRejected() {
 
       <ConfirmModal
         open={bulkConfirmOpen}
-        title="Approve Selected Rejected Requests?"
+        title="Move Selected Requests On Hold to Approved?"
         message={
           bulkApproveTargets.length > 0
             ? `Move ${bulkApproveTargets.length} selected students to approved?`

@@ -19,7 +19,7 @@ export default function LibraryLibrarianRejected() {
   return (
     <>
       <RejectedRequests
-        title="Central Library - Librarian | Rejected Requests"
+        title="Central Library - Librarian | Requests On Hold"
         data={librarianRejected}
         onMoveToApproved={(s) => {
           setConfirmStudent(s);
@@ -58,7 +58,7 @@ export default function LibraryLibrarianRejected() {
 
       <ConfirmModal
         open={bulkConfirmOpen}
-        title="Approve Selected Rejected Requests?"
+        title="Move Selected Requests On Hold to Approved?"
         message={
           bulkConfirmStudents.length > 0
             ? `Move ${bulkConfirmStudents.length} selected students to approved?`

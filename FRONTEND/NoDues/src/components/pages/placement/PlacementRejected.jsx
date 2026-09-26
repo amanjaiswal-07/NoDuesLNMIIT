@@ -20,7 +20,7 @@ export default function PlacementRejected() {
   return (
     <>
       <RejectedRequests
-        title="Placement Cell - Rejected Requests"
+        title="Placement Cell - Requests On Hold"
         data={rejected}
         onMoveToApproved={(s) => {
           setConfirmStudent(s);
@@ -59,7 +59,7 @@ export default function PlacementRejected() {
 
       <ConfirmModal
         open={bulkConfirmOpen}
-        title="Approve Selected Rejected Requests?"
+        title="Move Selected Requests On Hold to Approved?"
         message={
           bulkConfirmStudents.length > 0
             ? `Move ${bulkConfirmStudents.length} selected students to approved?`

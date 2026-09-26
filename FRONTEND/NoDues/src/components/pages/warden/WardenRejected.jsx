@@ -25,7 +25,7 @@ export default function WardenRejected() {
       ) : (
         <>
           <RejectedRequests
-            title={`Warden - ${selectedHostel} | Rejected Requests`}
+            title={`Warden - ${selectedHostel} | Requests On Hold`}
             data={rejected}
             onMoveToApproved={(s) => {
               setConfirmStudent(s);
@@ -64,7 +64,7 @@ export default function WardenRejected() {
 
           <ConfirmModal
             open={bulkConfirmOpen}
-            title="Approve Selected Rejected Requests?"
+            title="Move Selected Requests On Hold to Approved?"
             message={
               bulkConfirmStudents.length > 0
                 ? `Move ${bulkConfirmStudents.length} selected students to approved?`

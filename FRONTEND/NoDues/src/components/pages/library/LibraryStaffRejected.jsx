@@ -19,7 +19,7 @@ export default function LibraryStaffRejected() {
   return (
     <>
       <RejectedRequests
-        title="Central Library - Staff | Rejected Requests"
+        title="Central Library - Staff | Requests On Hold"
         data={staffRejected}
         onMoveToApproved={(s) => {
           setConfirmStudent(s);

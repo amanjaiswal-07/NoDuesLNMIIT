@@ -20,7 +20,7 @@ export default function AccountsRejected() {
   return (
     <>
       <RejectedRequests
-        title="Accounts - Rejected Requests"
+        title="Accounts - Requests On Hold"
         data={rejected}
         onMoveToApproved={(s) => {
           setApproveTarget(s);
@@ -59,7 +59,7 @@ export default function AccountsRejected() {
 
       <ConfirmModal
         open={bulkConfirmOpen}
-        title="Approve Selected Rejected Requests?"
+        title="Move Selected Requests On Hold to Approved?"
         message={
           bulkApproveTargets.length > 0
             ? `Move ${bulkApproveTargets.length} selected students to approved?`

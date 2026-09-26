@@ -50,7 +50,7 @@ export default function LibraryLibrarianApproved() {
                 className={rowButton("red")}
               >
                 <XCircleIcon className="h-5 w-5" />
-                Move to Rejected
+                Move to On Hold
               </button>
 
               <button
