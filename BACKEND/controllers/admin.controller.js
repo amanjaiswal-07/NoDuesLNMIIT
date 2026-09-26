@@ -2,7 +2,7 @@ const EligibleStudent = require('../models/EligibleStudent');
 const User = require('../models/User');
 const NoDuesRequest = require('../models/NoDuesRequest');
 const ClearanceStep = require('../models/ClearanceStep');
-const { ROUTE_TO_PERMISSION } = require('../config/permissionCodes');
+const { ROUTE_TO_PERMISSION, ALL_UNIT_CODES } = require('../config/permissionCodes');
 const { VALID_BRANCHES, normalizeBranch, isValidBranch } = require('../config/workflowConfig');
 
 const unknownBranchMessage = (branch) =>
@@ -369,37 +369,114 @@ async function getDashboardStats(req, res) {
     }
 }
 
+/**
+ * Builds one summary row per application (optionally filtered by status):
+ * step progress, where it is pending and where/since when it is on hold.
+ */
+async function buildApplicationRows(filter = {}) {
+    const requests = await NoDuesRequest.find(filter)
+        .select('studentName studentEmail rollNo branch status submittedAt completedAt createdAt')
+        .sort({ createdAt: -1 })
+        .lean();
+
+    const steps = await ClearanceStep.find({ requestId: { $in: requests.map(r => r._id) } })
+        .select('requestId unitCode unitLabel unitGroup status rejectionReason rejectedAt')
+        .lean();
+
+    const stepsByRequest = {};
+    for (const s of steps) (stepsByRequest[String(s.requestId)] = stepsByRequest[String(s.requestId)] || []).push(s);
+
+    return requests.map(r => {
+        const reqSteps = stepsByRequest[String(r._id)] || [];
+        // Collapse labs into their group so the list stays readable
+        const pendingAt = [...new Set(reqSteps.filter(s => s.status === 'pending').map(s => departmentOf(s).name))];
+        const held = reqSteps.filter(s => s.status === 'rejected');
+        const onHoldAt = held.map(s => ({ name: s.unitLabel, reason: s.rejectionReason || '', since: s.rejectedAt || null }));
+        const holdTimes = held.map(s => s.rejectedAt).filter(Boolean).map(d => new Date(d).getTime());
+        return {
+            ...r,
+            approvedSteps: reqSteps.filter(s => s.status === 'approved').length,
+            totalSteps: reqSteps.length,
+            pendingAt,
+            onHoldAt,
+            onHoldSince: holdTimes.length ? new Date(Math.min(...holdTimes)) : null,
+        };
+    });
+}
+
 /** GET /api/admin/applications — one row per application with step progress */
 async function listApplications(req, res) {
     try {
-        const requests = await NoDuesRequest.find()
-            .select('studentName studentEmail rollNo branch status submittedAt completedAt createdAt')
-            .sort({ createdAt: -1 })
-            .lean();
+        res.json({ applications: await buildApplicationRows() });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}
 
-        const steps = await ClearanceStep.find({ requestId: { $in: requests.map(r => r._id) } })
-            .select('requestId unitCode unitLabel unitGroup status rejectionReason')
-            .lean();
+/**
+ * GET /api/admin/dashboard-details/:type
+ * The rows behind each dashboard card.
+ * type: users | eligible | profiles | active | onhold | completed
+ */
+async function getDashboardDetails(req, res) {
+    try {
+        const { type } = req.params;
 
-        const stepsByRequest = {};
-        for (const s of steps) (stepsByRequest[String(s.requestId)] = stepsByRequest[String(s.requestId)] || []).push(s);
+        if (type === 'users') {
+            const users = await User.find({ permissionCodes: { $elemMatch: { $ne: 'student' } } })
+                .select('name email permissionCodes createdAt')
+                .sort({ createdAt: -1 })
+                .lean();
+            const rows = users.map(u => ({
+                _id: u._id,
+                name: u.name,
+                email: u.email,
+                roles: u.permissionCodes
+                    .filter(c => c !== 'student')
+                    .map(c => c === 'admin' ? 'Admin' : (LAB_GROUP_LABELS[c] || ALL_UNIT_CODES[c]?.label || c)),
+                addedAt: u.createdAt,
+            }));
+            return res.json({ rows });
+        }
 
-        const applications = requests.map(r => {
-            const reqSteps = stepsByRequest[String(r._id)] || [];
-            // Collapse labs into their group so the list stays readable
-            const pendingAt = [...new Set(reqSteps.filter(s => s.status === 'pending').map(s => departmentOf(s).name))];
-            const onHoldAt = reqSteps.filter(s => s.status === 'rejected')
-                .map(s => ({ name: s.unitLabel, reason: s.rejectionReason || '' }));
-            return {
-                ...r,
-                approvedSteps: reqSteps.filter(s => s.status === 'approved').length,
-                totalSteps: reqSteps.length,
-                pendingAt,
-                onHoldAt,
-            };
-        });
+        if (type === 'eligible' || type === 'profiles') {
+            const query = type === 'profiles' ? { profileCompleted: true } : {};
+            const [students, requests] = await Promise.all([
+                EligibleStudent.find(query)
+                    .select('name email rollNo branch profileCompleted createdAt updatedAt')
+                    .sort(type === 'profiles' ? { updatedAt: -1 } : { createdAt: -1 })
+                    .lean(),
+                NoDuesRequest.find({}, 'studentEmail status submittedAt').lean(),
+            ]);
+            const requestByEmail = Object.fromEntries(requests.map(r => [r.studentEmail.toLowerCase(), r]));
+            const rows = students.map(s => {
+                const request = requestByEmail[s.email.toLowerCase()];
+                return {
+                    _id: s._id,
+                    name: s.name,
+                    email: s.email,
+                    rollNo: s.rollNo,
+                    branch: s.branch,
+                    profileCompleted: Boolean(s.profileCompleted),
+                    addedAt: s.createdAt,
+                    profileSavedAt: s.updatedAt,
+                    applicationStatus: request?.status || null,
+                    appliedAt: request?.submittedAt || null,
+                };
+            });
+            return res.json({ rows });
+        }
 
-        res.json({ applications });
+        const STATUS_FILTER = {
+            active: { status: { $ne: 'approved' } },
+            onhold: { status: 'action_required' },
+            completed: { status: 'approved' },
+        };
+        if (STATUS_FILTER[type]) {
+            return res.json({ rows: await buildApplicationRows(STATUS_FILTER[type]) });
+        }
+
+        res.status(400).json({ error: `Unknown dashboard card: ${type}` });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -426,5 +503,5 @@ async function getApplicationDetails(req, res) {
 module.exports = {
     listEligibleStudents, addEligibleStudent, bulkAddEligibleStudents, bulkRemoveEligibleStudents, removeEligibleStudent, editEligibleStudent,
     listStaffAccess, addStaffAccess, updateStaffAccess, removeStaffAccess,
-    getDashboardStats, listApplications, getApplicationDetails,
+    getDashboardStats, getDashboardDetails, listApplications, getApplicationDetails,
 };

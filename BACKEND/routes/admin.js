@@ -5,7 +5,7 @@ const { requirePermission } = require('../middleware/requirePermission');
 const {
     listEligibleStudents, addEligibleStudent, bulkAddEligibleStudents, bulkRemoveEligibleStudents, removeEligibleStudent, editEligibleStudent,
     listStaffAccess, addStaffAccess, updateStaffAccess, removeStaffAccess,
-    getDashboardStats, listApplications, getApplicationDetails,
+    getDashboardStats, getDashboardDetails, listApplications, getApplicationDetails,
 } = require('../controllers/admin.controller');
 
 // All admin routes require authentication + 'admin' permission
@@ -27,6 +27,7 @@ router.delete('/staff-access/:id', removeStaffAccess);
 
 // ── Dashboard & Applications ──────────────────────────────────────────────────
 router.get('/dashboard-stats', getDashboardStats);
+router.get('/dashboard-details/:type', getDashboardDetails);
 router.get('/applications', listApplications);
 router.get('/applications/:id', getApplicationDetails);
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../../api/client";
+import DashboardDetailsModal from "./DashboardDetailsModal";
 
 export default function AdminHome() {
   const [statsData, setStatsData] = useState({
@@ -12,6 +13,7 @@ export default function AdminHome() {
   });
   const [departmentOverview, setDepartmentOverview] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [detailsType, setDetailsType] = useState(null);
 
   useEffect(() => {
     const fetchDashboardStats = async () => {
@@ -41,12 +43,12 @@ export default function AdminHome() {
   }, []);
 
   const stats = [
-    { label: "Authorized Department Users", value: statsData.authorizedUsers },
-    { label: "Eligible Students", value: statsData.eligibleStudents },
-    { label: "Profiles Completed", value: statsData.profilesCompleted },
-    { label: "Active Applications", value: statsData.activeApplications },
-    { label: "Applications On Hold", value: statsData.onHoldApplications },
-    { label: "Completed No Dues", value: statsData.completedApplications },
+    { type: "users", label: "Authorized Department Users", value: statsData.authorizedUsers },
+    { type: "eligible", label: "Eligible Students", value: statsData.eligibleStudents },
+    { type: "profiles", label: "Profiles Completed", value: statsData.profilesCompleted },
+    { type: "active", label: "Active Applications", value: statsData.activeApplications },
+    { type: "onhold", label: "Applications On Hold", value: statsData.onHoldApplications },
+    { type: "completed", label: "Completed No Dues", value: statsData.completedApplications },
   ];
 
   if (isLoading) {
@@ -69,13 +71,16 @@ export default function AdminHome() {
 
       <section className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
         {stats.map((item) => (
-          <div
+          <button
             key={item.label}
-            className="rounded-2xl border border-white/10 bg-white/5 p-5"
+            type="button"
+            onClick={() => setDetailsType(item.type)}
+            className="rounded-2xl border border-white/10 bg-white/5 p-5 text-left transition hover:border-blue-500/50 hover:bg-white/10"
           >
             <p className="text-sm text-white/60">{item.label}</p>
             <p className="mt-3 text-3xl font-semibold text-white">{item.value}</p>
-          </div>
+            <p className="mt-2 text-xs text-white/35">Click to view details</p>
+          </button>
         ))}
       </section>
 
@@ -118,6 +123,10 @@ export default function AdminHome() {
           </div>
         </div>
       </section>
+
+      {detailsType && (
+        <DashboardDetailsModal key={detailsType} type={detailsType} onClose={() => setDetailsType(null)} />
+      )}
     </div>
   );
 }
