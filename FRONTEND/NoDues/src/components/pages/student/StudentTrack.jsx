@@ -530,6 +530,8 @@ export default function StudentTrack() {
       });
 
       setShowReapplyModal(false);
+      // Refresh layout data too (application status + profile lock state)
+      if (refreshStudentData) await refreshStudentData();
       await fetchSteps();
     } catch (err) {
       setReapplyMsg(`❌ ${err.response?.data?.error || "Reapply failed. Please try again."}`);

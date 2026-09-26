@@ -1,111 +1,52 @@
 /**
- * ViewDetailsModal — Enhanced Department View Details Modal
+ * ViewDetailsModal — department "View Details" modal
  *
- * Sections:
- *  1. Basic Info         — name, roll, email, phone
- *  2. Current Status     — this department's approval status + rejection details
- *  3. Prerequisite Approvals — (dependent depts only) sibling step statuses
- *  4. Department-Specific Details — warden/library/store/placement/accounts
- *  5. Documents          — ID card image, PDF preview (via secure proxy)
- *  6. Reject Info        — shown prominently if this step is rejected
+ * Every department sees:
+ *  1. Basic Info            — name, roll, email, phone, branch
+ *  2. Status                — overall application status + this department's status
+ *  3. Timeline              — this department's events (holds with reasons, reapplies, approvals)
+ *  4. On Hold / Reapply History
+ *  5. Prerequisite Approvals — status of the departments this step depends on
+ *  6. ID Card
+ * Plus only its own section (backend sends only that department's fields):
+ *  placement → placement details + documents · library → BTP report + email date
+ *  accounts → refund / declaration details + cancelled cheque · store → club/fest role
+ *  warden → last stayed hostel
  *
  * Props:
- *   open             — boolean
- *   student          — the step object (from PendingRequests list), contains _id, requestId, etc.
- *   currentDepartment — short string key e.g. "warden" | "library_staff" | "library_librarian"
- *                       | "store" | "placement" | "accounts" | "hod" | "nad" | "medical" etc.
- *   onClose          — function
+ *   open, student (row from the department list: stepId/id), onClose
+ *   currentDepartment — fallback only; the step's own unitCode from the backend is used
  */
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import api from "../../api/client";
 
-// ── In-app File Preview Modal ─────────────────────────────────────────────────
-// Uses Google Docs Viewer for PDFs so Cloudinary's Content-Disposition:
-// attachment header doesn't trigger a browser download.
-function FilePreviewModal({ url, onClose }) {
-  // Keep a stable ref to onClose so the ESC effect never stale-closes.
-  const onCloseRef = { current: onClose };
-  onCloseRef.current = onClose;
+// ── Blob preview for proof files (served through the auth-gated proxy) ────────
+function FilePreviewModal({ file, onClose }) {
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
-  const [imgLoaded, setImgLoaded] = useState(false);
-  const [imgError, setImgError] = useState(false);
-
-  // ESC to close — registered once on mount.
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onCloseRef.current(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    const onKey = (e) => { if (e.key === "Escape") onCloseRef.current(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
-  if (!url) return null;
-
-  // Detect PDF: Cloudinary raw uploads contain '/raw/' in the path, or URL ends in .pdf
-  const isPdf = /\.pdf(\?|$)/i.test(url) || url.includes('/raw/');
-
-  // Google Docs Viewer renders any public URL (including Cloudinary) without Content-Disposition issues
-  const googleViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+  if (!file) return null;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/85 backdrop-blur-sm"
-        aria-label="Close preview"
-      />
-      {/* Panel */}
-      <div className="relative z-10 flex flex-col w-full max-w-4xl max-h-[92vh] rounded-2xl border border-white/15 bg-neutral-900 shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 shrink-0">
-          <p className="text-sm font-semibold text-white/80">
-            Document Preview {isPdf ? '· PDF' : '· Image'}
-          </p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-white/50 hover:bg-white/10 hover:text-white transition"
-            aria-label="Close"
-          >
-            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-            </svg>
-          </button>
+      <button type="button" onClick={onClose} className="absolute inset-0 bg-black/85 backdrop-blur-sm" aria-label="Close preview" />
+      <div className="relative z-10 flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-white/15 bg-neutral-900 shadow-2xl">
+        <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
+          <p className="text-sm font-semibold text-white/80">Document Preview {file.isPdf ? "· PDF" : "· Image"}</p>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-white/50 transition hover:bg-white/10 hover:text-white" aria-label="Close">✕</button>
         </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-auto bg-neutral-950 flex items-center justify-center">
-          {isPdf ? (
-            /* PDF → Google Docs Viewer bypasses Cloudinary's attachment header */
-            <iframe
-              key={url}
-              src={googleViewerUrl}
-              title="Document preview"
-              className="w-full h-[78vh] border-0"
-              allow="autoplay"
-            />
-          ) : imgError ? (
-            <div className="flex flex-col items-center gap-3 py-12 text-white/40">
-              <span className="text-4xl">🖼️</span>
-              <p className="text-sm">Could not load image.</p>
-            </div>
+        <div className="flex flex-1 items-center justify-center overflow-auto bg-neutral-950">
+          {file.isPdf ? (
+            <iframe src={file.url} title="Document preview" className="h-[78vh] w-full border-0 bg-white" />
           ) : (
-            <div className="relative flex items-center justify-center p-3 min-h-[40vh]">
-              {!imgLoaded && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-white/60" />
-                </div>
-              )}
-              <img
-                src={url}
-                alt="Document preview"
-                className={`max-h-[75vh] max-w-full object-contain rounded-lg select-none transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
-                onLoad={() => setImgLoaded(true)}
-                onError={() => { setImgError(true); setImgLoaded(true); }}
-                onContextMenu={(e) => e.preventDefault()}
-              />
-            </div>
+            <img src={file.url} alt="Document preview" className="max-h-[75vh] max-w-full rounded-lg object-contain p-3" />
           )}
         </div>
       </div>
@@ -113,237 +54,212 @@ function FilePreviewModal({ url, onClose }) {
   );
 }
 
-// ── Status pill ──────────────────────────────────────────────────────────
+// ── Small building blocks ──────────────────────────────────────────────────────
 function StatusPill({ status }) {
   if (status === "approved")
-    return <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-300 shadow-sm shadow-emerald-900/30">✓ Approved</span>;
+    return <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-300">✓ Approved</span>;
   if (status === "rejected")
-    return <span className="inline-flex items-center gap-1 rounded-full border border-rose-400/40 bg-rose-500/15 px-3 py-1 text-xs font-bold text-rose-300 shadow-sm shadow-rose-900/30">✕ On Hold</span>;
+    return <span className="inline-flex items-center gap-1 rounded-full border border-rose-400/40 bg-rose-500/15 px-3 py-1 text-xs font-bold text-rose-300">✕ On Hold</span>;
   if (status === "locked")
     return <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/40">⏳ Waiting</span>;
-  return <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-500/15 px-3 py-1 text-xs font-bold text-amber-300 shadow-sm shadow-amber-900/30">● Pending</span>;
+  return <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-500/15 px-3 py-1 text-xs font-bold text-amber-300">● Pending</span>;
 }
 
-// ── Info row ──────────────────────────────────────────────────────────
+const APPLICATION_STATUS = {
+  in_progress: { label: "In Progress", className: "text-amber-300" },
+  action_required: { label: "On Hold", className: "text-rose-300" },
+  approved: { label: "Completed", className: "text-emerald-300" },
+  submitted: { label: "Submitted", className: "text-blue-300" },
+};
+
 function InfoRow({ label, value }) {
   return (
     <div className="rounded-lg border border-white/8 bg-gradient-to-b from-white/[0.07] to-white/[0.03] px-3 py-2.5">
       <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/40">{label}</p>
-      <p className="text-sm font-medium text-white/90 break-all">{value || "—"}</p>
+      <p className="break-all text-sm font-medium text-white/90">{value || "—"}</p>
     </div>
   );
 }
 
-// ── Section heading ──────────────────────────────────────────────────────
 function SectionHeading({ children }) {
   return (
-    <div className="flex items-center gap-3 mb-3">
+    <div className="mb-3 flex items-center gap-3">
       <div className="h-4 w-0.5 rounded-full bg-gradient-to-b from-white/40 to-white/10" />
       <p className="text-[11px] font-bold uppercase tracking-widest text-white/50">{children}</p>
     </div>
   );
 }
 
-// ── In-modal document viewer ───────────────────────────────────────────────────
-// stepId — used to call GET /clearance/:stepId/file/:fieldName (dept officer auth)
+const fmt = (d) => (d ? new Date(d).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "");
+
+// Backend stores hold notes as "[reason] description"
+function parseHoldNote(note = "") {
+  const m = note.match(/^\[(.+?)\]\s*([\s\S]*)$/);
+  return m ? { reason: m[1].trim(), description: m[2].trim() } : { reason: note, description: "" };
+}
+
+// ── Student document (proxied by step, only the department's own documents) ───
 function DocPreview({ label, fieldName, isPdf = false, stepId }) {
   const [url, setUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!stepId) { setLoading(false); setError("Step ID missing."); return; }
     let objectUrl = null;
-    setLoading(true);
-    setError("");
-    setUrl(null);
-
+    let cancelled = false;
     api.get(`/clearance/${stepId}/file/${fieldName}`, { responseType: "blob" })
       .then((res) => {
+        if (cancelled) return;
         const type = isPdf
           ? "application/pdf"
           : (res.data.type && res.data.type !== "application/octet-stream" ? res.data.type : "image/jpeg");
-        const blob = new Blob([res.data], { type });
-        objectUrl = URL.createObjectURL(blob);
+        objectUrl = URL.createObjectURL(new Blob([res.data], { type }));
         setUrl(objectUrl);
       })
-      .catch((err) => setError(err.response?.data?.error || "Could not load document."))
-      .finally(() => setLoading(false));
+      .catch((err) => { if (!cancelled) setError(err.response?.status === 404 ? "Not uploaded." : "Could not load document."); })
+      .finally(() => { if (!cancelled) setLoading(false); });
 
-    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
+    return () => { cancelled = true; if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [fieldName, isPdf, stepId]);
 
   return (
     <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
-      {/* Card header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
         <p className="text-sm font-semibold text-white/80">{label}</p>
-        {url && (
-          <a href={url} target="_blank" rel="noreferrer"
-            className="text-xs text-white/40 hover:text-white/70 underline transition-colors">
-            Open ↗
-          </a>
-        )}
+        {url && <a href={url} target="_blank" rel="noreferrer" className="text-xs text-white/40 underline transition-colors hover:text-white/70">Open ↗</a>}
       </div>
-
-      {/* Content */}
       <div className="p-3">
-        {loading && (
-          <div className="flex items-center gap-2 py-4">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/10 border-t-white/60" />
-            <p className="text-xs text-white/40">Loading…</p>
-          </div>
-        )}
-        {!loading && error && (
-          <p className="py-3 text-xs text-rose-400">{error}</p>
-        )}
-        {url && !isPdf && (
-          <img src={url} alt={label}
-            className="max-h-64 w-full rounded-lg object-contain border border-white/10 bg-black" />
-        )}
+        {loading && <p className="py-3 text-xs text-white/40">Loading…</p>}
+        {!loading && error && <p className="py-3 text-xs text-rose-400">{error}</p>}
+        {url && !isPdf && <img src={url} alt={label} className="max-h-64 w-full rounded-lg border border-white/10 bg-black object-contain" />}
         {url && isPdf && (
-          <iframe
-            title={label}
-            src={`${url}#toolbar=1&navpanes=0`}
-            className="w-full rounded-lg border border-white/10 bg-white"
-            style={{ height: "360px", minHeight: "300px" }}
-            allow="fullscreen"
-          />
+          <iframe title={label} src={`${url}#toolbar=1&navpanes=0`} className="w-full rounded-lg border border-white/10 bg-white" style={{ height: "360px", minHeight: "300px" }} />
         )}
       </div>
     </div>
   );
 }
-// ── Reapply evidence viewer (proxied via /clearance/reapply/proof/:stepId/0) ───
-// Uses the same clearance-side auth as DocPreview but hits the reapply proof route.
-function ReapplyProofPreview({ stepId }) {
-  const [url, setUrl] = useState(null);
-  const [isPdf, setIsPdf] = useState(false);
-  const [loading, setLoading] = useState(true);
+
+// Button that loads a timeline proof file through the proxy and opens the preview
+function ProofButton({ stepId, logId, index, label, onOpen }) {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (!stepId) { setLoading(false); return; }
-    let objectUrl = null;
+  const open = async () => {
     setLoading(true);
     setError("");
-    setUrl(null);
-
-    api.get(`/clearance/reapply/proof/${stepId}/0`, { responseType: "blob" })
-      .then((res) => {
-        const ct = res.data.type || "";
-        const pdf = ct === "application/pdf" || ct.includes("pdf");
-        setIsPdf(pdf);
-        const blob = new Blob([res.data], { type: pdf ? "application/pdf" : ct || "image/jpeg" });
-        objectUrl = URL.createObjectURL(blob);
-        setUrl(objectUrl);
-      })
-      .catch((err) => {
-        const msg = err.response?.data?.error || "Could not load document.";
-        setError(msg);
-      })
-      .finally(() => setLoading(false));
-
-    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
-  }, [stepId]);
+    try {
+      const res = await api.get(`/clearance/${stepId}/logs/${logId}/proof/${index}`, { responseType: "blob" });
+      const type = res.data.type || "application/octet-stream";
+      const isPdf = type.includes("pdf");
+      onOpen({ url: URL.createObjectURL(new Blob([res.data], { type: isPdf ? "application/pdf" : type })), isPdf });
+    } catch {
+      setError("Could not load file");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
-        <p className="text-sm font-semibold text-white/80">Supporting Document</p>
-        {url && (
-          <a href={url} target="_blank" rel="noreferrer"
-            className="text-xs text-white/40 hover:text-white/70 underline transition-colors">
-            Open ↗
-          </a>
-        )}
-      </div>
-      <div className="p-3">
-        {loading && (
-          <div className="flex items-center gap-2 py-4">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/10 border-t-white/60" />
-            <p className="text-xs text-white/40">Loading…</p>
+    <span className="inline-flex items-center gap-2">
+      <button type="button" onClick={open} disabled={loading}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-400/25 bg-blue-500/10 px-3 py-1.5 text-xs text-blue-200 transition hover:bg-blue-500/20 disabled:opacity-50">
+        📎 {loading ? "Loading…" : label}
+      </button>
+      {error && <span className="text-xs text-rose-400">{error}</span>}
+    </span>
+  );
+}
+
+// ── Timeline (this department's step) ─────────────────────────────────────────
+const EVENT_CFG = {
+  created: { icon: "＋", label: "Application received", tone: "text-white/40" },
+  unlocked: { icon: "🔓", label: "Unlocked — prerequisites approved", tone: "text-white/40" },
+  relocked: { icon: "🔒", label: "Locked again — a prerequisite is no longer approved", tone: "text-white/40" },
+  approved: { icon: "✓", label: "Approved", tone: "text-emerald-300" },
+  rejected: { icon: "⊘", label: "Put On Hold", tone: "text-rose-300" },
+  reapply: { icon: "↩", label: "Student reapplied", tone: "text-blue-300" },
+  student_replied: { icon: "💬", label: "Student replied", tone: "text-blue-300" },
+  reopened: { icon: "⟳", label: "Back in review", tone: "text-white/50" },
+};
+
+function Timeline({ logs, stepId, onOpenFile }) {
+  if (logs.length === 0) return <p className="text-sm text-white/40">No events yet.</p>;
+  return (
+    <div className="space-y-2">
+      {logs.map((log) => {
+        const cfg = EVENT_CFG[log.action] || { icon: "·", label: log.action, tone: "text-white/50" };
+        const hold = log.action === "rejected" ? parseHoldNote(log.note) : null;
+        const isStudentNote = log.action === "reapply" || log.action === "student_replied";
+        return (
+          <div key={log._id} className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span className={`text-xs font-semibold ${cfg.tone}`}>{cfg.icon} {cfg.label}</span>
+              {log.actorEmail && log.actorEmail !== "system" && <span className="text-[10px] text-white/40">by {log.actorEmail}</span>}
+              <span className="ml-auto text-[10px] text-white/30">{fmt(log.timestamp)}</span>
+            </div>
+            {hold && (
+              <div className="mt-1.5 space-y-0.5">
+                {hold.reason && <p className="text-xs text-rose-200"><span className="text-rose-300/60">Reason:</span> {hold.reason}</p>}
+                {hold.description && <p className="text-xs text-rose-200/80"><span className="text-rose-300/60">Details:</span> {hold.description}</p>}
+              </div>
+            )}
+            {isStudentNote && (
+              <p className="mt-1.5 whitespace-pre-wrap text-xs text-blue-100/90">
+                {log.note?.trim() ? log.note : <span className="italic text-white/30">No comment provided.</span>}
+              </p>
+            )}
+            {log.proofCount > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {Array.from({ length: log.proofCount }, (_, i) => (
+                  <ProofButton key={i} stepId={stepId} logId={log._id} index={i}
+                    label={log.proofCount > 1 ? `View document ${i + 1}` : "View document"} onOpen={onOpenFile} />
+                ))}
+              </div>
+            )}
           </div>
-        )}
-        {!loading && error && <p className="py-3 text-xs text-rose-400">{error}</p>}
-        {url && !isPdf && (
-          <img src={url} alt="Reapply proof"
-            className="max-h-64 w-full rounded-lg object-contain border border-white/10 bg-black" />
-        )}
-        {url && isPdf && (
-          <iframe
-            title="Reapply proof"
-            src={`${url}#toolbar=1&navpanes=0`}
-            className="w-full rounded-lg border border-white/10 bg-white"
-            style={{ height: "340px", minHeight: "280px" }}
-            allow="fullscreen"
-          />
-        )}
-      </div>
+        );
+      })}
     </div>
   );
 }
 
-// ── Department-specific detail tables ───────────────────────────────────────
-function WardenSection({ profile }) {
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      <InfoRow label="Last Stayed Hostel" value={profile?.hostel} />
-    </div>
-  );
-}
-
-function LibrarySection({ profile, hasDoc, stepId }) {
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <InfoRow label="Library Email Sent Date" value={profile?.libraryEmailDate} />
-      </div>
-      {hasDoc
-        ? <DocPreview label="BTP Report" fieldName="btpReportFile" isPdf stepId={stepId} />
-        : <p className="text-sm text-white/40">BTP Report not uploaded yet.</p>
-      }
-    </div>
-  );
-}
-
-function StoreSection({ profile }) {
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      <InfoRow label="Club / Fest Role" value={profile?.clubRoleType} />
-      {(profile?.clubRoleType === "Club Coordinator" || profile?.clubRoleType === "Both") && (
-        <InfoRow label="Club / Role Detail" value={profile?.clubRoleDetail} />
-      )}
-      {(profile?.clubRoleType === "Fest Organizing Committee" || profile?.clubRoleType === "Both") && (
-        <InfoRow label="Fest Role Detail" value={profile?.festRoleDetail} />
-      )}
-    </div>
-  );
-}
-
+// ── Department-specific sections ──────────────────────────────────────────────
 function PlacementSection({ profile, stepId }) {
-  const ps = profile?.placementStatus;
+  const ps = profile.placementStatus;
+  const docs = profile.documents || {};
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <InfoRow label="Placement Status" value={ps} />
-        <InfoRow label="TPC Email Sent Date" value={profile?.tpcEmailDate} />
-        {ps === "Unplaced" && <InfoRow label="Current Activity" value={profile?.placementDetailsText} />}
+        <InfoRow label="TPC Email Sent Date" value={profile.tpcEmailDate} />
+        {ps === "Unplaced" && <InfoRow label="Current Activity" value={profile.placementDetailsText} />}
       </div>
       <div className="grid grid-cols-1 gap-3">
-        {ps === "Placed" && profile?.hasOfferLetter && (
-          <DocPreview label="Offer Letter" fieldName="offerLetterFile" isPdf stepId={stepId} />
-        )}
-        {(ps === "Unplaced" || ps === "Preparation Break" || ps === "Family Business") && profile?.hasPlacementDeclaration && (
+        {ps === "Placed" && docs.offerLetterFile && <DocPreview label="Offer Letter" fieldName="offerLetterFile" isPdf stepId={stepId} />}
+        {["Unplaced", "Preparation Break", "Family Business"].includes(ps) && docs.placementDeclarationFile && (
           <DocPreview label="Placement Declaration" fieldName="placementDeclarationFile" isPdf stepId={stepId} />
         )}
         {(ps === "Higher Studies India" || ps === "Higher Studies Abroad") && (
           <>
-            {profile?.hasAdmissionLetter && <DocPreview label="Admission Letter" fieldName="admissionLetterFile" isPdf stepId={stepId} />}
-            {profile?.hasExamScorecard && <DocPreview label="Exam Scorecard" fieldName="examScorecardFile" isPdf stepId={stepId} />}
+            {docs.admissionLetterFile && <DocPreview label="Admission Letter" fieldName="admissionLetterFile" isPdf stepId={stepId} />}
+            {docs.examScorecardFile && <DocPreview label="Exam Scorecard" fieldName="examScorecardFile" isPdf stepId={stepId} />}
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function LibrarySection({ profile, stepId }) {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <InfoRow label="Library Email Sent Date" value={profile.libraryEmailDate} />
+      </div>
+      {profile.documents?.btpReportFile
+        ? <DocPreview label="BTP Report" fieldName="btpReportFile" isPdf stepId={stepId} />
+        : <p className="text-sm text-white/40">BTP Report not uploaded.</p>}
     </div>
   );
 }
@@ -352,86 +268,53 @@ function AccountsSection({ profile, stepId }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <InfoRow label="Account Holder Name" value={profile?.accountHolderName} />
-        <InfoRow label="Bank Account Number" value={profile?.bankAccountNumber} />
-        <InfoRow label="Bank Name" value={profile?.bankName} />
-        <InfoRow label="Bank Branch" value={profile?.bankBranch} />
-        <InfoRow label="Bank City" value={profile?.bankCity} />
-        <InfoRow label="IFSC Code" value={profile?.ifscCode} />
-        <InfoRow label="Donation Amount" value={profile?.donationAmount ? `₹${profile.donationAmount}` : "—"} />
-        <InfoRow label="Father's Name" value={profile?.fatherName} />
-        <InfoRow label="Father's Mobile" value={profile?.fatherMobileNumber} />
+        <InfoRow label="Account Holder Name" value={profile.accountHolderName} />
+        <InfoRow label="Bank Account Number" value={profile.bankAccountNumber} />
+        <InfoRow label="Bank Name" value={profile.bankName} />
+        <InfoRow label="Bank Branch" value={profile.bankBranch} />
+        <InfoRow label="Bank City" value={profile.bankCity} />
+        <InfoRow label="IFSC Code" value={profile.ifscCode} />
+        <InfoRow label="Donation Amount" value={profile.donationAmount ? `₹${profile.donationAmount}` : "—"} />
+        <InfoRow label="Student Contact Number" value={profile.studentContactNumber} />
+        <InfoRow label="Father's Name" value={profile.fatherName} />
+        <InfoRow label="Father's Mobile" value={profile.fatherMobileNumber} />
       </div>
-      <InfoRow label="Correspondence Address" value={profile?.correspondenceAddress} />
-      {profile?.hasCancelledCheque && (
-        <DocPreview label="Cancelled Cheque" fieldName="cancelledChequeFile" isPdf={false} stepId={stepId} />
-      )}
+      <InfoRow label="Correspondence Address" value={profile.correspondenceAddress} />
+      <InfoRow label="Declaration" value={profile.declarationAccepted ? "✓ Accepted by student" : "Not accepted"} />
+      {profile.documents?.cancelledChequeFile
+        ? <DocPreview label="Cancelled Cheque" fieldName="cancelledChequeFile" stepId={stepId} />
+        : <p className="text-sm text-white/40">Cancelled cheque not uploaded.</p>}
     </div>
   );
 }
 
-// ── Prerequisite Approvals ─────────────────────────────────────────────────────
-// Which steps to show per department type
-const PREREQ_MAP = {
-  library_librarian: ["library_staff"],
-  nad: ["hod_cse", "hod_ece", "hod_cce", "hod_mech"],
-  store: ["hod_cse", "hod_ece", "hod_cce", "hod_mech", "warden"],
-  hod: [
-    "lucs", "library_librarian",
-    "cse_lab_1", "cse_lab_2", "cse_lab_3", "cse_lab_cmlbda",
-    "ece_lab_microwave", "ece_lab_adc", "ece_lab_ti", "ece_lab_dsp", "ece_lab_ecad", "ece_lab_be", "ece_lab_kundan",
-    "mech_lab_workshop", "mech_lab_mechatronics", "mech_lab_robotics", "mech_lab_cim", "mech_lab_cad",
-    "mech_lab_kd", "mech_lab_material", "mech_lab_measurement", "mech_lab_fmm", "mech_lab_ic_engine",
-    "mech_lab_thermodynamics", "mech_lab_heat_transfer", "mech_lab_eng_graphics", "mech_lab_automotive", "mech_lab_cria",
-    "physics_lab_ug", "physics_lab_optics",
-  ],
-  accounts: null, // show everything
-};
-
-function PrereqSection({ allSteps, department }) {
-  if (!allSteps || allSteps.length === 0) return null;
-
-  // Determine which unitCodes to show
-  const deptKey = department?.startsWith("hod") ? "hod" : department;
-  const filter = PREREQ_MAP[deptKey];
-
-  let toShow;
-  if (filter === null) {
-    // accounts: show all except itself
-    toShow = allSteps.filter(s => !s.unitCode.startsWith("accounts"));
-  } else if (Array.isArray(filter)) {
-    toShow = allSteps.filter(s => filter.includes(s.unitCode));
-  } else {
-    return null; // no prereqs defined for this dept
-  }
-
-  if (toShow.length === 0) return null;
-
+function StoreSection({ profile }) {
+  const t = profile.clubRoleType;
   return (
-    <div className="space-y-2">
-      {toShow.map((s) => (
-        <div key={s.unitCode} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-          <p className="text-sm text-white/80">{s.unitLabel}</p>
-          <StatusPill status={s.status} />
-        </div>
-      ))}
+    <div className="grid grid-cols-2 gap-3">
+      <InfoRow label="Club / Fest Role" value={t} />
+      {(t === "Club Coordinator" || t === "Both") && <InfoRow label="Club / Role Detail" value={profile.clubRoleDetail} />}
+      {(t === "Fest Organizing Committee" || t === "Both") && <InfoRow label="Fest Role Detail" value={profile.festRoleDetail} />}
     </div>
   );
 }
 
-// ── Determine which dept-specific section to render ────────────────────────────
-function DeptSpecificSection({ department, profile, stepId }) {
-  if (!profile) return null;
-  const d = (department || "").toLowerCase();
-
-  if (d === "warden") return <WardenSection profile={profile} />;
-  if (d === "library_staff" || d === "library_librarian")
-    return <LibrarySection profile={profile} hasDoc={profile.hasBtpReport} stepId={stepId} />;
-  if (d === "store") return <StoreSection profile={profile} />;
-  if (d === "placement") return <PlacementSection profile={profile} stepId={stepId} />;
-  if (d === "accounts") return <AccountsSection profile={profile} stepId={stepId} />;
-  return null;
+function WardenSection({ profile }) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <InfoRow label="Last Stayed Hostel" value={profile.hostel} />
+    </div>
+  );
 }
+
+const DEPT_SECTIONS = {
+  placement: { title: "Placement Details", Component: PlacementSection },
+  library_staff: { title: "Library Details", Component: LibrarySection },
+  library_librarian: { title: "Library Details", Component: LibrarySection },
+  accounts: { title: "Refund / Declaration Details", Component: AccountsSection },
+  store: { title: "Club / Fest Role", Component: StoreSection },
+  warden: { title: "Hostel Details", Component: WardenSection },
+};
 
 // ── Main modal ─────────────────────────────────────────────────────────────────
 export default function ViewDetailsModal({ open, student, currentDepartment, onClose }) {
@@ -440,7 +323,7 @@ export default function ViewDetailsModal({ open, student, currentDepartment, onC
   const [fetchError, setFetchError] = useState("");
   const [previewFile, setPreviewFile] = useState(null);
 
-  // useDepartmentData flattens step._id into both `stepId` and `id` fields (not `_id`)
+  // useDepartmentData flattens step._id into both `stepId` and `id` fields
   const stepId = student?.stepId || student?.id || student?._id;
 
   const fetchFull = useCallback(async () => {
@@ -467,47 +350,44 @@ export default function ViewDetailsModal({ open, student, currentDepartment, onC
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
+    const onKey = (e) => { if (e.key === "Escape" && !previewFile) onClose?.(); };
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
     };
-  }, [open, onClose]);
+  }, [open, onClose, previewFile]);
+
+  const closePreview = useCallback(() => {
+    setPreviewFile((f) => { if (f) URL.revokeObjectURL(f.url); return null; });
+  }, []);
 
   if (!open || !student) return null;
 
   const step = data?.step;
   const profile = data?.profile;
   const allSteps = data?.allSteps || [];
+  const stepLogs = data?.stepLogs || [];
   const requestInfo = data?.requestInfo;
+  const department = step?.unitCode || currentDepartment;
 
-  // Fallback to flat student fields while data is loading
   const name = requestInfo?.studentName || student?.studentName || student?.name || "—";
   const roll = requestInfo?.rollNo || student?.rollNo || student?.roll || "—";
   const email = requestInfo?.studentEmail || student?.studentEmail || student?.email || "—";
-  const phone = profile?.phone || requestInfo?.phone || student?.phone || "—";
   const currentStatus = step?.status || student?.status || "pending";
+  const appStatus = APPLICATION_STATUS[requestInfo?.status];
 
-  const showPrereq = ["library_librarian", "nad", "store", "accounts",
-    "hod", "hod_cse", "hod_ece", "hod_cce", "hod_mech"].includes(currentDepartment);
-  const showDeptSection = ["warden", "library_staff", "library_librarian",
-    "store", "placement", "accounts"].includes(currentDepartment);
+  const prerequisites = allSteps.filter((s) => (step?.dependsOn || []).includes(s.unitCode));
+  const holdLogs = stepLogs.filter((l) => l.action === "rejected");
+  const reapplyLogs = stepLogs.filter((l) => l.action === "reapply" || l.action === "student_replied");
+  const deptSection = DEPT_SECTIONS[department];
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-3">
-      {/* Backdrop */}
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/75 backdrop-blur-[2px]"
-        aria-label="Close modal backdrop"
-      />
+      <button type="button" onClick={onClose} className="absolute inset-0 bg-black/75 backdrop-blur-[2px]" aria-label="Close modal backdrop" />
 
-      {/* Modal */}
-      <div className="relative flex flex-col w-full max-w-2xl max-h-[93vh] rounded-2xl border border-white/15 bg-neutral-900 text-white shadow-2xl">
-
-        {/* ── Header ── */}
+      <div className="relative flex max-h-[93vh] w-full max-w-2xl flex-col rounded-2xl border border-white/15 bg-neutral-900 text-white shadow-2xl">
+        {/* Header */}
         <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
           <div>
             <div className="flex items-center gap-2.5">
@@ -516,15 +396,11 @@ export default function ViewDetailsModal({ open, student, currentDepartment, onC
             </div>
             <p className="mt-0.5 text-sm text-white/60">{name} ({roll})</p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 hover:bg-white/10">
-            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-            </svg>
-          </button>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 hover:bg-white/10" aria-label="Close">✕</button>
         </div>
 
-        {/* ── Body (scrollable) ── */}
-        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+        {/* Body */}
+        <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
           {loading && (
             <div className="flex items-center justify-center py-16">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-white/60" />
@@ -538,200 +414,98 @@ export default function ViewDetailsModal({ open, student, currentDepartment, onC
             </div>
           )}
 
-          {!loading && !fetchError && (
+          {!loading && !fetchError && data && (
             <>
-              {/* ── 1. Basic Info ── */}
+              {/* 1. Basic Info */}
               <div>
                 <SectionHeading>Basic Information</SectionHeading>
                 <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
                   <InfoRow label="Name" value={name} />
                   <InfoRow label="Roll Number" value={roll} />
                   <InfoRow label="Email" value={email} />
-                  <InfoRow label="Phone" value={phone} />
+                  <InfoRow label="Phone" value={profile?.phone} />
                   <InfoRow label="Branch" value={profile?.branch || requestInfo?.branch} />
+                  <InfoRow label="Graduation" value={profile?.graduation} />
                 </div>
               </div>
 
-              {/* ── 2. Current Status ── */}
+              {/* 2. Status */}
               <div>
-                <SectionHeading>Department Status</SectionHeading>
-                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                <SectionHeading>Application Status</SectionHeading>
+                <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-white/70">This Department's Status</p>
+                    <p className="text-sm text-white/70">Overall Application</p>
+                    <span className={`text-sm font-semibold ${appStatus?.className || "text-white/60"}`}>{appStatus?.label || requestInfo?.status || "—"}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-white/70">This Department</p>
                     <StatusPill status={currentStatus} />
                   </div>
-                  {step?.actionBy && (
-                    <p className="mt-1.5 text-xs text-white/40">
-                      Actioned by {step.actionBy} on {new Date(step.actionAt).toLocaleString()}
-                    </p>
-                  )}
+                  {requestInfo?.submittedAt && <p className="text-xs text-white/40">Applied on {fmt(requestInfo.submittedAt)}</p>}
+                  {step?.actionBy && <p className="text-xs text-white/40">Last action by {step.actionBy} on {fmt(step.actionAt)}</p>}
                 </div>
               </div>
 
-              {/* ── 2b. On Hold History (all holds from stepLogs) ── */}
-              {(() => {
-                const stepLogs = data?.stepLogs || [];
-                const holdLogs = stepLogs.filter((l) => l.action === 'rejected');
-                if (holdLogs.length === 0) return null;
-                return (
-                  <div>
-                    <SectionHeading>On Hold History</SectionHeading>
-                    <div className="space-y-2.5">
-                      {holdLogs.map((log, i) => {
-                        // Backend stores: note = `[${reason}] ${description}`
-                        const raw = log.note || '';
-                        const bracketMatch = raw.match(/^\[(.+?)\]\s*([\s\S]*)$/);
-                        const reason      = bracketMatch ? bracketMatch[1].trim() : raw;
-                        const description = bracketMatch ? bracketMatch[2].trim() : '';
+              {/* 3. Timeline */}
+              <div>
+                <SectionHeading>Application Timeline</SectionHeading>
+                <Timeline logs={stepLogs} stepId={stepId} onOpenFile={setPreviewFile} />
+              </div>
 
-                        return (
-                          <div key={i} className="rounded-xl border border-rose-400/25 bg-rose-500/[0.08] p-3.5 space-y-1.5">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-rose-400/70">
-                              Hold #{i + 1}
-                            </p>
-                            {reason && (
-                              <div>
-                                <p className="text-[10px] text-rose-300/50">Reason</p>
-                                <p className="text-sm text-rose-200">{reason}</p>
-                              </div>
-                            )}
-                            {description && (
-                              <div>
-                                <p className="text-[10px] text-rose-300/50">Description</p>
-                                <p className="text-sm text-rose-200/80">{description}</p>
-                              </div>
-                            )}
-                            <div className="flex flex-wrap gap-3 pt-0.5">
-                              {log.actorEmail && log.actorEmail !== 'system' && (
-                                <p className="text-[10px] text-white/35">
-                                  By: <span className="text-white/55">{log.actorEmail}</span>
-                                </p>
-                              )}
-                              {log.timestamp && (
-                                <p className="text-[10px] text-white/30">
-                                  {new Date(log.timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+              {/* 4. History summary */}
+              {(holdLogs.length > 0 || reapplyLogs.length > 0) && (
+                <div>
+                  <SectionHeading>Application History</SectionHeading>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <InfoRow label="Times Put On Hold" value={String(holdLogs.length)} />
+                    <InfoRow label="Times Student Reapplied" value={String(reapplyLogs.length)} />
                   </div>
-                );
-              })()}
+                </div>
+              )}
 
-              {/* ── 2c. Reapply History (all reapply attempts from stepLogs) ── */}
-              {(() => {
-                const stepLogs = data?.stepLogs || [];
-                const reapplyLogs = stepLogs.filter((l) => l.action === 'reapply');
-                if (reapplyLogs.length === 0) return null;
-                return (
-                  <div>
-                    <SectionHeading>Reapply History</SectionHeading>
-                    <div className="space-y-2.5">
-                      {reapplyLogs.map((log, i) => {
-                        // Each log stores the comment in `note` and files in `proofUrls`
-                        const comment  = log.note?.trim() || '';
-                        const hasFile  = log.proofUrls?.length > 0;
-                        const hasAny   = comment || hasFile;
-
-                        return (
-                          <div key={i} className="rounded-xl border border-blue-400/20 bg-blue-500/[0.06] p-3.5 space-y-2">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400/60">
-                              Reapply #{i + 1}
-                            </p>
-
-                            {hasAny ? (
-                              <>
-                                {comment ? (
-                                  <div>
-                                    <p className="text-[10px] text-blue-300/50">Student Comment</p>
-                                    <p className="text-sm text-blue-100 leading-relaxed whitespace-pre-wrap">{comment}</p>
-                                  </div>
-                                ) : (
-                                  <p className="text-xs text-white/30 italic">No comment provided.</p>
-                                )}
-
-                                {hasFile && (
-                                  <div className="flex flex-wrap gap-2 pt-0.5">
-                                    {log.proofUrls.map((url, fi) => (
-                                      <button
-                                        key={fi}
-                                        type="button"
-                                        onClick={() => setPreviewFile(url)}
-                                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-400/25 bg-blue-500/10 px-3 py-1.5 text-xs text-blue-200 hover:bg-blue-500/20 transition"
-                                      >
-                                        📎 View Document {log.proofUrls.length > 1 ? fi + 1 : ''}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </>
-                            ) : (
-                              /* Edge case: student submitted reapply with NO comment AND NO file */
-                              <p className="text-xs text-white/30 italic">
-                                No clarification provided by student.
-                              </p>
-                            )}
-
-                            {log.timestamp && (
-                              <p className="text-[10px] text-white/25 pt-0.5">
-                                {new Date(log.timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* ── 3. Prerequisite Approvals ── */}
-              {showPrereq && allSteps.length > 0 && (
+              {/* 5. Prerequisites */}
+              {prerequisites.length > 0 && (
                 <div>
                   <SectionHeading>Prerequisite Approvals</SectionHeading>
-                  <PrereqSection allSteps={allSteps} department={currentDepartment} />
+                  <div className="space-y-2">
+                    {prerequisites.map((s) => (
+                      <div key={s.unitCode} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                        <p className="text-sm text-white/80">{s.unitLabel}</p>
+                        <StatusPill status={s.status} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {/* ── 4. Department-Specific Details ── */}
-              {showDeptSection && profile && (
+              {/* 6. Department-specific details */}
+              {deptSection && profile && (
                 <div>
-                  <SectionHeading>Department Details</SectionHeading>
-                  <DeptSpecificSection department={currentDepartment} profile={profile} stepId={stepId} />
+                  <SectionHeading>{deptSection.title}</SectionHeading>
+                  <deptSection.Component profile={profile} stepId={stepId} />
                 </div>
               )}
 
-              {/* ── 5. Documents — ID Card (all depts see it) ── */}
+              {/* 7. ID Card (all departments) */}
               <div>
                 <SectionHeading>Documents</SectionHeading>
-                {profile?.hasIdCard
-                  ? <DocPreview label="Student ID Card" fieldName="idCardFile" isPdf={false} stepId={stepId} />
-                  : <p className="text-sm text-white/40">ID Card not uploaded.</p>
-                }
+                {profile?.documents?.idCardFile
+                  ? <DocPreview label="Student ID Card" fieldName="idCardFile" stepId={stepId} />
+                  : <p className="text-sm text-white/40">ID Card not uploaded.</p>}
               </div>
             </>
           )}
         </div>
 
-        {/* ── Footer ── */}
+        {/* Footer */}
         <div className="flex justify-end border-t border-white/10 px-5 py-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl border border-white/15 px-4 py-2 text-sm font-medium text-white/90 hover:bg-white/10"
-          >
+          <button type="button" onClick={onClose} className="rounded-xl border border-white/15 px-4 py-2 text-sm font-medium text-white/90 hover:bg-white/10">
             Close
           </button>
         </div>
       </div>
 
-      {/* In-app file preview — z-[200] sits above this modal (z-[120]) */}
-      {previewFile && (
-        <FilePreviewModal url={previewFile} onClose={() => setPreviewFile(null)} />
-      )}
+      {previewFile && <FilePreviewModal file={previewFile} onClose={closePreview} />}
     </div>
   );
 }

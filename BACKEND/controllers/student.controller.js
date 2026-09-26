@@ -213,13 +213,36 @@ function computeProfileCompleted(s) {
     return basicOk && docsOk && roleOk && placementOk && declarationOk;
 }
 
+// ── Profile Lock ──────────────────────────────────────────────────────────────
+
+/**
+ * The profile can be edited before applying and while the application is On Hold
+ * (so the student can fix what a department asked for). It is locked while the
+ * application is being reviewed and after it is completed.
+ */
+async function getProfileLock(email) {
+    const emailRegex = new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+    const request = await NoDuesRequest.findOne({ studentEmail: emailRegex }).sort({ createdAt: -1 }).select('status');
+    if (!request || request.status === 'action_required') return { editable: true, reason: '' };
+    // Orphaned request (no steps) is treated as no application — same rule as getActiveRequest
+    const stepCount = await ClearanceStep.countDocuments({ requestId: request._id });
+    if (stepCount === 0 && request.status !== 'approved') return { editable: true, reason: '' };
+    return {
+        editable: false,
+        reason: request.status === 'approved'
+            ? 'Your No Dues is complete, so your profile can no longer be edited.'
+            : 'Your profile is locked while your application is being reviewed. It unlocks only if a department puts your application on hold.',
+    };
+}
+
 // ── Controllers ───────────────────────────────────────────────────────────────
 
 async function getProfile(req, res) {
     try {
         const student = await EligibleStudent.findOne({ email: req.user.email });
         if (!student) return res.status(404).json({ error: 'Student not found in eligible list' });
-        res.json({ profile: buildProfileResponse(student) });
+        const lock = await getProfileLock(req.user.email);
+        res.json({ profile: { ...buildProfileResponse(student), editable: lock.editable, lockReason: lock.reason } });
     } catch (err) {
         console.error('getProfile error:', err);
         res.status(500).json({ error: err.message });
@@ -230,6 +253,14 @@ async function updateProfile(req, res) {
     try {
         const student = await EligibleStudent.findOne({ email: req.user.email });
         if (!student) return res.status(404).json({ error: 'Student not found in eligible list' });
+
+        const lock = await getProfileLock(req.user.email);
+        if (!lock.editable) {
+            // Files were already uploaded by multer before we got here — remove them
+            const uploaded = Object.values(req.files || {}).flat().map(f => f.path);
+            await Promise.all(uploaded.map(deleteFromCloudinary));
+            return res.status(403).json({ error: lock.reason });
+        }
 
         // Helper: get new Cloudinary URL from upload, or fall back to existing
         const getUrl = (fieldName, existingUrl) => {
@@ -352,7 +383,7 @@ async function updateProfile(req, res) {
             message: student.profileCompleted
                 ? 'Profile saved and marked complete.'
                 : 'Profile saved. Fill all required fields to apply.',
-            profile: buildProfileResponse(student),
+            profile: { ...buildProfileResponse(student), editable: true, lockReason: '' },
         });
     } catch (err) {
         console.error('updateProfile error:', err);

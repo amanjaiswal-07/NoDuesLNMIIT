@@ -40,6 +40,7 @@ router.delete('/:unitCode/access/:userId', clearanceController.removeDepartmentA
 router.get('/:stepId/details', clearanceController.getStepDetails);
 router.get('/:stepId/full', clearanceController.getStepFull);
 router.get('/:stepId/file/:fieldName', clearanceController.getStepFile);
+router.get('/:stepId/logs/:logId/proof/:index', clearanceController.getLogProof);
 
 // Reapply proof proxy — dept officers view student's reapply evidence
 router.get('/reapply/proof/:stepId/:index', studentController.getReapplyProof);

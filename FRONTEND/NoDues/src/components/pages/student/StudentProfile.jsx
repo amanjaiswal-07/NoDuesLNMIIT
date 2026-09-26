@@ -256,7 +256,7 @@ function buildFormFromProfile(profile, email) {
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function StudentProfile() {
-  const { email, studentProfile, setStudentProfile, setProfileComplete } = useOutletContext();
+  const { email, studentProfile, setStudentProfile, setProfileComplete, currentApplication } = useOutletContext();
   const navigate = useNavigate();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -442,6 +442,9 @@ export default function StudentProfile() {
   };
 
   const isActuallyComplete = savedProfile?.profileCompleted === true;
+  // Server decides: editable before applying and while On Hold; locked during review / after completion
+  const canEdit = savedProfile?.editable !== false;
+  const isOnHold = currentApplication?.status === "action_required";
 
   const statusLabel = isActuallyComplete && profileSaved ? "PROFILE COMPLETE" : "PROFILE INCOMPLETE";
   const statusClass = isActuallyComplete && profileSaved
@@ -468,7 +471,7 @@ export default function StudentProfile() {
               <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${statusClass}`}>
                 {statusLabel}
               </span>
-              {profileSaved && (
+              {profileSaved && canEdit && isLocked && (
                 <button
                   type="button"
                   disabled={isSubmitting}
@@ -496,6 +499,19 @@ export default function StudentProfile() {
           {errorMsg && (
             <div className="mt-6 rounded-xl border border-red-400/30 bg-red-500/10 p-4">
               <p className="text-sm font-medium text-red-200">{errorMsg}</p>
+            </div>
+          )}
+          {!canEdit && (
+            <div className="mt-6 rounded-xl border border-white/15 bg-white/5 p-4">
+              <p className="text-sm font-medium text-white/80">🔒 {savedProfile?.lockReason}</p>
+            </div>
+          )}
+          {canEdit && isOnHold && (
+            <div className="mt-6 rounded-xl border border-red-400/30 bg-red-500/10 p-4">
+              <p className="text-sm font-medium text-red-200">
+                Your application is On Hold. You can edit your profile to fix what the department asked for,
+                then go to Track and click "Reapply Now".
+              </p>
             </div>
           )}
           {!isLocked && profileSaved && (
@@ -805,7 +821,9 @@ export default function StudentProfile() {
           <div>
             <h2 className="text-lg font-semibold text-white">6. Final Confirmation</h2>
             <p className="mt-1 text-sm text-white/60">
-              {isLocked
+              {!canEdit
+                ? "Profile locked."
+                : isLocked
                 ? "Profile locked. Click \"Edit Profile\" to make changes."
                 : profileComplete
                   ? "All fields filled — ready to save."
@@ -813,13 +831,22 @@ export default function StudentProfile() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            {profileSaved && isActuallyComplete && (
+            {profileSaved && isActuallyComplete && !currentApplication && (
               <button
                 type="button"
                 onClick={() => navigate("/student/apply")}
                 className="rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/20"
               >
                 Go to Apply for No Dues →
+              </button>
+            )}
+            {isOnHold && (
+              <button
+                type="button"
+                onClick={() => navigate("/student/track")}
+                className="rounded-xl border border-red-400/40 bg-red-500/10 px-5 py-3 text-sm font-semibold text-red-300 hover:bg-red-500/20"
+              >
+                Go to Track to Reapply →
               </button>
             )}
             <button

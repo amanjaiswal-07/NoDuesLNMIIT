@@ -5,6 +5,45 @@ const User = require('../models/User');
 const { DEPARTMENT_ACCESS_CODES } = require('../config/permissionCodes');
 const { unlockDependents, relockDependents, syncRequestStatus } = require('../services/dependencyEngine');
 
+// ── What each department may see of a student ─────────────────────────────────
+// Every department sees the common identity fields + ID card. The extra profile
+// fields and documents below are only sent to the departments listed.
+const COMMON_PROFILE_FIELDS = ['name', 'rollNo', 'email', 'branch', 'graduation', 'phone'];
+
+const LIBRARY_FIELDS = { fields: ['libraryEmailDate'], files: ['btpReportFile'] };
+const DEPT_PROFILE_ACCESS = {
+    placement: {
+        fields: ['placementStatus', 'tpcEmailDate', 'placementDetailsText'],
+        files: ['offerLetterFile', 'placementDeclarationFile', 'admissionLetterFile', 'examScorecardFile'],
+    },
+    library_staff: LIBRARY_FIELDS,
+    library_librarian: LIBRARY_FIELDS,
+    accounts: {
+        fields: ['accountHolderName', 'bankAccountNumber', 'bankName', 'bankBranch', 'bankCity', 'ifscCode',
+            'donationAmount', 'studentContactNumber', 'fatherName', 'fatherMobileNumber',
+            'correspondenceAddress', 'declarationAccepted'],
+        files: ['cancelledChequeFile'],
+    },
+    store: { fields: ['clubRoleType', 'clubRoleDetail', 'festRoleDetail'], files: [] },
+    warden: { fields: ['hostel'], files: [] },
+};
+
+const COMMON_FILES = ['idCardFile'];
+
+const deptAccess = (unitCode) => DEPT_PROFILE_ACCESS[unitCode] || { fields: [], files: [] };
+const allowedFilesFor = (unitCode) => [...COMMON_FILES, ...deptAccess(unitCode).files];
+
+// Request fields shown in department lists; hostel only where the UI needs it
+const LIST_REQUEST_FIELDS = 'studentName rollNo studentEmail branch status submittedAt';
+const listRequestFields = (unitCode) =>
+    ['warden', 'store', 'accounts'].includes(unitCode) ? `${LIST_REQUEST_FIELDS} hostel` : LIST_REQUEST_FIELDS;
+
+// Replace raw Cloudinary proof URLs in logs with a count; files are served via the proof proxy
+const safeLog = (log) => {
+    const { proofUrls, ...rest } = log;
+    return { ...rest, proofCount: (proofUrls || []).length };
+};
+
 // ── GET Pending / Approved / Rejected ──────────────────────────────────────────
 
 /**
@@ -22,7 +61,8 @@ async function getStepsByStatus(req, res, status) {
 
         // Populate request details so frontend can show student name, roll, etc.
         const steps = await ClearanceStep.find({ unitCode, status })
-            .populate('requestId')
+            .select('-studentProofUrls')
+            .populate('requestId', listRequestFields(unitCode))
             .sort({ updatedAt: -1 });
 
         // For 'pending' steps: enforce prerequisite check.
@@ -101,7 +141,7 @@ async function approveStep(req, res) {
         // Run dependency engine: unlock downstream steps + sync request status
         const unlockedCodes = await unlockDependents(step.requestId);
 
-        res.json({ message: 'Step approved', unlockedCodes, step });
+        res.json({ message: 'Step approved', unlockedCodes, step: { _id: step._id, unitCode: step.unitCode, status: step.status } });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -162,7 +202,7 @@ async function rejectStep(req, res) {
             console.error('[rejectStep] relockDependents failed (non-fatal):', relockErr.message);
         }
 
-        res.json({ message: 'Step rejected', step });
+        res.json({ message: 'Step rejected', step: { _id: step._id, unitCode: step.unitCode, status: step.status } });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -216,7 +256,9 @@ async function bulkApprove(req, res) {
 async function getStepDetails(req, res) {
     try {
         const { stepId } = req.params;
-        const step = await ClearanceStep.findById(stepId).populate('requestId');
+        const step = await ClearanceStep.findById(stepId)
+            .select('-studentProofUrls')
+            .populate('requestId', LIST_REQUEST_FIELDS);
         if (!step) return res.status(404).json({ error: 'Step not found' });
 
         if (!req.hasPermissionFor(step.unitCode)) {
@@ -224,9 +266,9 @@ async function getStepDetails(req, res) {
         }
 
         // Fetch full history tail
-        const history = await StepActionLog.find({ stepId }).sort({ timestamp: 1 });
+        const history = await StepActionLog.find({ stepId }).sort({ timestamp: 1 }).lean();
 
-        res.json({ step, history });
+        res.json({ step, history: history.map(safeLog) });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -237,17 +279,20 @@ async function getStepDetails(req, res) {
 /**
  * GET /api/clearance/:stepId/full
  * Returns:
- *  - The current step (with rejection info)
+ *  - The current step (with hold info) and its event log (timeline/history)
  *  - All sibling steps for the same request (for prerequisite display)
- *  - Student profile from EligibleStudent (for department-specific fields)
- *  - Document hasXxx booleans (NOT the raw URLs — frontend uses proxy)
+ *  - The student's profile: common identity fields for every department, plus
+ *    only the fields/documents this step's department needs (DEPT_PROFILE_ACCESS)
+ *  - Document hasXxx booleans (NOT the raw URLs — frontend uses the file proxy)
  */
 async function getStepFull(req, res) {
     try {
         const { stepId } = req.params;
         const EligibleStudent = require('../models/EligibleStudent');
 
-        const step = await ClearanceStep.findById(stepId).populate('requestId');
+        const step = await ClearanceStep.findById(stepId)
+            .select('-studentProofUrls')
+            .populate('requestId', 'studentName studentEmail rollNo branch status submittedAt');
         if (!step) return res.status(404).json({ error: 'Step not found' });
 
         if (!req.hasPermissionFor(step.unitCode)) {
@@ -255,79 +300,30 @@ async function getStepFull(req, res) {
         }
 
         const request = step.requestId;
+        const access = deptAccess(step.unitCode);
+        const allowedFiles = allowedFilesFor(step.unitCode);
 
         // All sibling steps for prerequisite panel
         const allSteps = await ClearanceStep.find({ requestId: request._id })
             .select('unitCode unitLabel unitGroup status rejectionReason rejectionDescription actionAt')
             .lean();
 
-        // Full student profile from EligibleStudent (not exposed via NoDuesRequest)
+        const fileDbFields = allowedFiles.map(f => FILE_FIELD_MAP[f]);
         const profile = await EligibleStudent.findOne({ email: request.studentEmail })
-            .select([
-                'name', 'rollNo', 'email', 'branch', 'department', 'graduation',
-                'phone', 'hostel',
-                // Library
-                'libraryEmailDate', 'btpReportFileUrl',
-                // Placement
-                'placementStatus', 'tpcEmailDate', 'placementDetailsText',
-                'offerLetterFileUrl', 'placementDeclarationFileUrl',
-                'admissionLetterFileUrl', 'examScorecardFileUrl',
-                // Club / Store
-                'clubRoleType', 'clubRoleDetail', 'festRoleDetail',
-                // Financial / Accounts
-                'accountHolderName', 'bankAccountNumber', 'bankName',
-                'bankBranch', 'bankCity', 'ifscCode', 'donationAmount',
-                'fatherName', 'fatherMobileNumber', 'correspondenceAddress',
-                'cancelledChequeFileUrl',
-                // Documents (presence only)
-                'idCardFileUrl',
-            ])
+            .select([...COMMON_PROFILE_FIELDS, ...access.fields, ...fileDbFields])
             .lean();
 
-        // Convert raw Cloudinary URLs to boolean hasX flags so we never leak URLs.
-        // The frontend fetches files via /api/student/file/:fieldName (auth-gated proxy).
-        const docFlags = profile ? {
-            hasIdCard: Boolean(profile.idCardFileUrl),
-            hasBtpReport: Boolean(profile.btpReportFileUrl),
-            hasOfferLetter: Boolean(profile.offerLetterFileUrl),
-            hasPlacementDeclaration: Boolean(profile.placementDeclarationFileUrl),
-            hasAdmissionLetter: Boolean(profile.admissionLetterFileUrl),
-            hasExamScorecard: Boolean(profile.examScorecardFileUrl),
-            hasCancelledCheque: Boolean(profile.cancelledChequeFileUrl),
-        } : {};
+        // Only this department's fields; documents as presence flags (never raw URLs)
+        let safeProfile = null;
+        if (profile) {
+            safeProfile = {};
+            for (const f of [...COMMON_PROFILE_FIELDS, ...access.fields]) safeProfile[f] = profile[f];
+            safeProfile.documents = Object.fromEntries(
+                allowedFiles.map(f => [f, Boolean(profile[FILE_FIELD_MAP[f]])])
+            );
+        }
 
-        // Build safe profile (strip raw URLs)
-        const safeProfile = profile ? {
-            name: profile.name,
-            rollNo: profile.rollNo,
-            email: profile.email,
-            branch: profile.branch,
-            department: profile.department,
-            graduation: profile.graduation,
-            phone: profile.phone,
-            hostel: profile.hostel,
-            libraryEmailDate: profile.libraryEmailDate,
-            placementStatus: profile.placementStatus,
-            tpcEmailDate: profile.tpcEmailDate,
-            placementDetailsText: profile.placementDetailsText,
-            clubRoleType: profile.clubRoleType,
-            clubRoleDetail: profile.clubRoleDetail,
-            festRoleDetail: profile.festRoleDetail,
-            accountHolderName: profile.accountHolderName,
-            bankAccountNumber: profile.bankAccountNumber,
-            bankName: profile.bankName,
-            bankBranch: profile.bankBranch,
-            bankCity: profile.bankCity,
-            ifscCode: profile.ifscCode,
-            donationAmount: profile.donationAmount,
-            fatherName: profile.fatherName,
-            fatherMobileNumber: profile.fatherMobileNumber,
-            correspondenceAddress: profile.correspondenceAddress,
-            ...docFlags,
-        } : null;
-
-        // All action logs for this specific step — for On Hold history + Reapply history
-        const StepActionLog = require('../models/StepActionLog');
+        // All action logs for this specific step — timeline, hold history, reapply history
         const stepLogs = await StepActionLog.find({ stepId: step._id })
             .sort({ timestamp: 1 })
             .lean();
@@ -335,7 +331,7 @@ async function getStepFull(req, res) {
         res.json({
             step,
             allSteps,
-            stepLogs,
+            stepLogs: stepLogs.map(safeLog),
             profile: safeProfile,
             requestInfo: {
                 _id: request._id,
@@ -343,11 +339,8 @@ async function getStepFull(req, res) {
                 studentName: request.studentName,
                 rollNo: request.rollNo,
                 branch: request.branch,
-                hostel: request.hostel,
-                phone: request.phone,
-                placementStatus: request.placementStatus,
-                // Latest reapply data — visible to ALL departments (not just the one that put on hold)
-                reapplyData: request.reapplyData || null,
+                status: request.status,
+                submittedAt: request.submittedAt,
             },
         });
     } catch (err) {
@@ -519,10 +512,36 @@ async function fetchFollowingRedirects(url, depth = 0) {
     });
 }
 
+/** Streams a Cloudinary file to the client (inline, no caching). */
+async function streamCloudinaryFile(fileUrl, res) {
+    // Cloudinary URL fixes
+    if (fileUrl.includes('/image/upload/') && fileUrl.toLowerCase().endsWith('.pdf')) {
+        fileUrl = fileUrl.replace('/image/upload/', '/raw/upload/');
+    }
+    fileUrl = fileUrl.replace(/\/fl_attachment/g, '');
+
+    const proxyRes = await fetchFollowingRedirects(fileUrl);
+
+    let contentType = proxyRes.headers['content-type'] || 'application/octet-stream';
+    if (fileUrl.toLowerCase().endsWith('.pdf') || contentType === 'application/octet-stream') {
+        contentType = 'application/pdf';
+    }
+
+    if (contentType.startsWith('text/html')) {
+        return res.status(502).json({ error: 'File could not be retrieved from storage.' });
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', 'inline');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    proxyRes.pipe(res);
+}
+
 /**
  * GET /api/clearance/:stepId/file/:fieldName
  * Allows department officers to view student documents inside the View Details modal.
- * Gated by stepId permission (officer must have permission for that step's unitCode).
+ * Gated by stepId permission, and each department may only open its own documents
+ * (ID card for everyone, see DEPT_PROFILE_ACCESS for the rest).
  */
 async function getStepFile(req, res) {
     try {
@@ -532,11 +551,14 @@ async function getStepFile(req, res) {
         const dbField = FILE_FIELD_MAP[fieldName];
         if (!dbField) return res.status(400).json({ error: 'Invalid file field' });
 
-        const step = await ClearanceStep.findById(stepId).populate('requestId');
+        const step = await ClearanceStep.findById(stepId).populate('requestId', 'studentEmail');
         if (!step) return res.status(404).json({ error: 'Step not found' });
 
         if (!req.hasPermissionFor(step.unitCode)) {
             return res.status(403).json({ error: 'Not authorized for this step' });
+        }
+        if (!allowedFilesFor(step.unitCode).includes(fieldName)) {
+            return res.status(403).json({ error: 'This document is not available to your department' });
         }
 
         const studentEmail = step.requestId?.studentEmail;
@@ -545,33 +567,39 @@ async function getStepFile(req, res) {
         const student = await EligibleStudent.findOne({ email: studentEmail });
         if (!student) return res.status(404).json({ error: 'Student profile not found' });
 
-        let fileUrl = student[dbField];
+        const fileUrl = student[dbField];
         if (!fileUrl) return res.status(404).json({ error: 'File not uploaded yet' });
 
-        // Cloudinary URL fixes
-        if (fileUrl.includes('/image/upload/') && fileUrl.toLowerCase().endsWith('.pdf')) {
-            fileUrl = fileUrl.replace('/image/upload/', '/raw/upload/');
-        }
-        fileUrl = fileUrl.replace(/\/fl_attachment/g, '');
-
-        const proxyRes = await fetchFollowingRedirects(fileUrl);
-
-        let contentType = proxyRes.headers['content-type'] || 'application/octet-stream';
-        if (fileUrl.toLowerCase().endsWith('.pdf') || contentType === 'application/octet-stream') {
-            contentType = 'application/pdf';
-        }
-
-        if (contentType.startsWith('text/html')) {
-            return res.status(502).json({ error: 'File could not be retrieved from storage.' });
-        }
-
-        res.setHeader('Content-Type', contentType);
-        res.setHeader('Content-Disposition', 'inline');
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        proxyRes.pipe(res);
-
+        await streamCloudinaryFile(fileUrl, res);
     } catch (err) {
         console.error('getStepFile error:', err);
+        res.status(500).json({ error: err.message });
+    }
+}
+
+/**
+ * GET /api/clearance/:stepId/logs/:logId/proof/:index
+ * Streams a proof file attached to one of this step's timeline entries
+ * (e.g. an older reapply), so raw storage URLs never reach the browser.
+ */
+async function getLogProof(req, res) {
+    try {
+        const { stepId, logId } = req.params;
+        const index = parseInt(req.params.index, 10) || 0;
+
+        const step = await ClearanceStep.findById(stepId).select('unitCode');
+        if (!step) return res.status(404).json({ error: 'Step not found' });
+        if (!req.hasPermissionFor(step.unitCode)) {
+            return res.status(403).json({ error: 'Not authorized for this step' });
+        }
+
+        const log = await StepActionLog.findOne({ _id: logId, stepId: step._id }).lean();
+        const fileUrl = log?.proofUrls?.[index];
+        if (!fileUrl) return res.status(404).json({ error: 'Proof file not found' });
+
+        await streamCloudinaryFile(fileUrl, res);
+    } catch (err) {
+        console.error('getLogProof error:', err);
         res.status(500).json({ error: err.message });
     }
 }
@@ -579,6 +607,6 @@ async function getStepFile(req, res) {
 module.exports = {
     getPending, getApproved, getRejected,
     approveStep, rejectStep, bulkApprove,
-    getStepDetails, getStepFull, getStepFile,
+    getStepDetails, getStepFull, getStepFile, getLogProof,
     getDepartmentAccess, addDepartmentAccess, editDepartmentAccess, removeDepartmentAccess,
 };
