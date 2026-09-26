@@ -21,9 +21,26 @@ const storage = new CloudinaryStorage({
     },
 });
 
+// Only PDFs and JPG/PNG images are accepted — checked by both type and extension
+// before anything is sent to Cloudinary.
+const ALLOWED = {
+    'application/pdf': ['.pdf'],
+    'image/jpeg': ['.jpg', '.jpeg'],
+    'image/png': ['.png'],
+};
+function fileFilter(req, file, cb) {
+    const name = (file.originalname || '').toLowerCase();
+    const exts = ALLOWED[file.mimetype];
+    if (exts && exts.some(ext => name.endsWith(ext))) return cb(null, true);
+    const err = new Error('Only PDF, JPG or PNG files are allowed.');
+    err.status = 400;
+    cb(err);
+}
+
 const upload = multer({
     storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+    fileFilter,
+    limits: { fileSize: 10 * 1024 * 1024, files: 10 }, // 10 MB each, at most 10 per request
 });
 
 module.exports = upload;

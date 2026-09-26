@@ -13,6 +13,10 @@ async function verifyGoogleToken(idToken) {
         audience: process.env.GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
+    // Access is granted by matching the email, so only accept addresses Google has verified
+    if (!payload?.email || payload.email_verified !== true) {
+        throw new Error('Invalid token: Google account email is not verified');
+    }
     return {
         email: payload.email,
         name: payload.name || payload.email,

@@ -53,7 +53,7 @@ const safeLog = (log) => {
 async function getStepsByStatus(req, res, status) {
     try {
         const { unitCode } = req.query;
-        if (!unitCode) return res.status(400).json({ error: 'unitCode query param is required' });
+        if (!unitCode || typeof unitCode !== 'string') return res.status(400).json({ error: 'unitCode query param is required' });
 
         if (!req.hasPermissionFor(unitCode)) {
             return res.status(403).json({ error: `Not authorized for unitCode: ${unitCode}` });

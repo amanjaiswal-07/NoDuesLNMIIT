@@ -14,13 +14,23 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-// ── Response interceptor: PASS-THROUGH ONLY ──
-// DO NOT auto-redirect or clear tokens here.
-// Auth decisions (navigate to '/') are made explicitly per-component.
-// Doing it globally causes the Refresh button to log out the user on any transient error.
+// ── Response interceptor ──
+// Transient failures (network, 5xx) are passed through untouched so a Refresh never logs
+// anyone out. Only a 401 — the session itself is no longer valid (expired token, or an
+// admin removed this person's access) — clears the session and returns to the login page.
 api.interceptors.response.use(
     (response) => response,
-    (error) => Promise.reject(error)
+    (error) => {
+        if (error.response?.status === 401 && localStorage.getItem('token')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            if (window.location.pathname !== '/') {
+                sessionStorage.setItem('loginNotice', error.response.data?.error || 'Your session has ended. Please sign in again.');
+                window.location.assign('/');
+            }
+        }
+        return Promise.reject(error);
+    }
 );
 
 export default api;

@@ -3,6 +3,11 @@ const jwt = require('jsonwebtoken');
 const SECRET = process.env.JWT_SECRET;
 const EXPIRY = process.env.JWT_EXPIRY || '15h';
 
+// A short or guessable secret would let anyone forge an admin token
+if (!SECRET || SECRET.length < 32) {
+    console.warn('⚠ SECURITY: JWT_SECRET is missing or shorter than 32 characters. Set a long random value.');
+}
+
 /**
  * Signs a JWT.
  * @param {object} payload - { id, email, role, permissionCodes, redirectRoute }

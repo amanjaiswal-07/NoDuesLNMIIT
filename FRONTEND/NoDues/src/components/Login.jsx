@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect, useRef } from 'react';
+import { useEffect, useState, useLayoutEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import GoogleSignInButton from './GoogleSignInButton';
 import axios from 'axios';
@@ -36,7 +36,17 @@ const ROLES = [
 const Login = () => {
   const navigate = useNavigate();
   const [role, setRole] = useState("student");
-  const [error, setError] = useState("");
+  // A message left by the API client when a session was ended (e.g. access removed)
+  const [error, setError] = useState(() => {
+    try {
+      return sessionStorage.getItem("loginNotice") || "";
+    } catch {
+      return "";
+    }
+  });
+  useEffect(() => {
+    try { sessionStorage.removeItem("loginNotice"); } catch { /* storage unavailable */ }
+  }, []);
   const [isLoading, setIsLoading] = useState(false);
 
   // Google's button only accepts a pixel width (max 400), so match it to the card's width.
