@@ -18,6 +18,7 @@ the student downloads the filled **No Dues certificate** (the institute's paper 
 
 > Every diagram in this README is written in [Mermaid](https://mermaid.js.org/). GitHub draws them
 > automatically; in VS Code install a Mermaid preview extension.
+> Each diagram is followed by a short box: **what it shows**, **why it matters** and **how to read it**.
 
 ---
 
@@ -125,6 +126,12 @@ flowchart LR
     API -- "upload (multer) · delete ·<br/>stream files back" --> FILES
 ```
 
+> **What it shows:** the five pieces that make up the live portal and how they talk to each other: the React site (served by Vercel) running in the user's browser, the Express API (on Render), Google sign-in, the MongoDB Atlas database and Cloudinary file storage.
+>
+> **Why it matters:** it shows where each responsibility lives. The browser only ever talks to Vercel (to load the site), Google (to sign in) and our API. Only the API can reach the database and the stored files, so every rule and permission check happens in one place that users cannot tamper with.
+>
+> **How to read it:** follow the numbered arrows. (1) The browser downloads the site from Vercel. (2) The user signs in through Google's popup and receives an ID token. (3) Every later action is an HTTPS call to the API carrying our own JWT; the API verifies the Google token, reads/writes MongoDB and uploads/streams files from Cloudinary.
+
 **Key points**
 
 - The browser never talks to MongoDB or Cloudinary directly. Documents are **streamed through the
@@ -175,6 +182,12 @@ flowchart TD
     AC & AC2 & ADC & SC & CC -.->|"throw / next(err)"| EH["Global error handler<br/>Multer & 4xx → 400 with message<br/>5xx → generic 'Internal server error'"]
 ```
 
+> **What it shows:** the exact path one HTTP request takes inside the backend, from arrival to the controller that answers it, including every security layer on the way.
+>
+> **Why it matters:** the order of middleware is what makes the API safe. Security headers and CORS run first, malicious `$` operators are stripped before any code can use the input, and each router adds its own checks (token → permission) before the business logic runs. Any error from any layer ends in the same error handler, so internal details are never leaked.
+>
+> **How to read it:** read top to bottom. After `stripOperators` the request branches by URL prefix into one of four routers. Each router lane shows its guards in order, e.g. `/api/admin` = verifyToken → requirePermission('admin') → admin.controller. Dotted arrows lead to the global error handler.
+
 ### 4.2 Layers
 
 | Layer | Folder | Responsibility |
@@ -215,6 +228,12 @@ flowchart LR
     CERT["GET /student/certificate"] --> WC
 ```
 
+> **What it shows:** the three service modules that hold the core business logic and which API actions call them.
+>
+> **Why it matters:** controllers stay thin; the rules for creating steps, unlocking/re-locking them and computing the application's overall status live in one place (`dependencyEngine`) and are reused by approve, bulk approve, put on hold and reapply. This is what keeps every path consistent.
+>
+> **How to read it:** the boxes on the left are API actions; arrows point to the service function each one calls. `unlockDependents` always finishes by calling `syncRequestStatus`, which is how an application becomes Completed automatically after the last approval.
+
 ---
 
 ## 5. Frontend architecture
@@ -254,6 +273,12 @@ flowchart TD
     SH & SP & SA & ST & SHI & AH & ADA & AES & AAP & SHARED --> API["api/client.js (axios)<br/>adds Bearer token · 401 → logout"]
 ```
 
+> **What it shows:** the structure of the React app: the router in `main.jsx`, the `PrivateRoute` guard, the three families of pages (student portal, admin panel, department dashboards) and the shared pieces they reuse.
+>
+> **Why it matters:** all 13 department dashboards are built from the same shared layout, hook, lists and modals, so a fix in one shared component fixes every department. Everything talks to the backend through one API client that attaches the token and handles expired sessions.
+>
+> **How to read it:** start at `main.jsx`. `/` is the login page; everything else sits under `PrivateRoute`. Follow a branch down to see which pages a section has; the bottom node (`api/client.js`) is used by all of them.
+
 ### 5.2 How a department page gets its data
 
 ```mermaid
@@ -276,6 +301,12 @@ sequenceDiagram
     H-->>D: pending / approved / rejected + approve/reject/bulk functions
     D-->>L: Outlet context → Home / Pending / Approved / Rejected pages
 ```
+
+> **What it shows:** how a department dashboard loads its lists when it opens.
+>
+> **Why it matters:** it explains why every department behaves identically: the layout passes its unit codes (one code for Medical, many for a lab group) to `useDepartmentData`, which fetches Pending, Approved and On Hold for each code in parallel and hands the results plus approve/hold functions to every tab.
+>
+> **How to read it:** time flows downward. The `par` block means the requests run at the same time. The final arrow shows the data reaching the Home / Pending / Approved / Rejected pages through the Outlet context.
 
 ### 5.3 Frontend conventions
 
@@ -417,6 +448,12 @@ erDiagram
     USER ||--o{ CLEARANCE_STEP : "acts on (actionBy = email)"
     CLEARANCE_STEP }o--o{ CLEARANCE_STEP : "dependsOn / restartFrom (by unitCode)"
 ```
+
+> **What it shows:** the database: five collections, every field they store, the keys (PK = primary key, FK = reference to another collection, UK = unique) and how records relate.
+>
+> **Why it matters:** it is the data model the whole workflow is built on. One eligible student can have several applications over time; each application has 39–40 clearance steps (one per department); every change to a step is recorded as a timeline log entry. Users (staff/admin) are linked to the steps they approved through their email.
+>
+> **How to read it:** each box is a collection. The line endings are crow's-foot notation: `||` means exactly one, `o|` zero or one, `o{` zero or many, `|{` one or many. For example `NO_DUES_REQUEST ||--|{ CLEARANCE_STEP` reads "one application has one or more steps". The self-link on CLEARANCE_STEP is the prerequisite relation (`dependsOn` / `restartFrom`), stored as unit codes.
 
 ### 6.1 Collections in detail
 
@@ -564,6 +601,12 @@ flowchart LR
     ACC --> DONE(["Application Completed<br/>→ certificate"])
 ```
 
+> **What it shows:** which departments must approve before another department can act.
+>
+> **Why it matters:** this is the heart of the No Dues process and mirrors the paper form: the HOD signs only after the labs, LUCS and the library; NAD and Store come after the HOD; Accounts signs last. The portal enforces it automatically instead of relying on the student to visit offices in order.
+>
+> **How to read it:** departments inside the "Start immediately" box are Pending the moment the student applies. An arrow A → B means B stays Locked until A approves; a box with several incoming arrows waits for all of them. When Accounts approves, the application is complete.
+
 | Step | Waits for (`dependsOn`) |
 |---|---|
 | Librarian | Library Staff |
@@ -602,6 +645,12 @@ stateDiagram-v2
     approved --> [*]: all steps approved → request completed (final)
 ```
 
+> **What it shows:** every status a single department step can be in and every event that moves it between statuses.
+>
+> **Why it matters:** it defines what staff are allowed to do and what the system does automatically. For example, a Locked step can never be approved directly, an On Hold step can be moved straight to Approved, and an Approved step can be put on hold again, but only until the whole application is complete.
+>
+> **How to read it:** circles are states and arrows are transitions labelled with who or what causes them (staff action, student reapply, or the dependency engine). `[*]` at the top is creation on apply; `[*]` at the bottom is the application being completed, after which nothing changes.
+
 In the UI, `rejected` is always shown as **On Hold**.
 
 ### 9.2 An application (`NoDuesRequest.status`)
@@ -615,6 +664,12 @@ stateDiagram-v2
     in_progress --> approved: every step approved<br/>(completedAt set)
     approved --> [*]: final — certificate available,<br/>profile locked, no more holds
 ```
+
+> **What it shows:** the overall status of an application as the student and the admin see it.
+>
+> **Why it matters:** the application status is never set by hand. It is recomputed from its steps after every action: any step On Hold means *action required*, all steps approved means *completed*, otherwise *in progress*. That keeps the dashboard numbers always correct.
+>
+> **How to read it:** start at `[*]` (apply). It moves back and forth between in progress and action required as holds are raised and resolved, and ends at approved (completed), which is final.
 
 `submitted` exists in the schema as the default, but `applyForNoDues` creates requests directly
 as `in_progress`. `syncRequestStatus()` recomputes the status after every action.
@@ -644,6 +699,12 @@ flowchart TD
     M1 --> M2[Click a card → list of who is behind it]
     D --> AP[Applications: search, filter by status,<br/>progress, pending at, on hold by + reason,<br/>expand to see every step]
 ```
+
+> **What it shows:** everything the admin does to prepare and monitor the system.
+>
+> **Why it matters:** nobody can use the portal until the admin has loaded eligible students and given staff access; this diagram is the setup checklist. It also shows the validation on student data (valid branch, unique email and roll number) that prevents broken applications later.
+>
+> **How to read it:** three branches leave the dashboard: Eligible Students (single add or CSV import, then validation), Department Access (creates the User or adds a permission code) and monitoring (cards and the Applications page).
 
 ### 10.2 Sign-in (all roles)
 
@@ -684,6 +745,12 @@ sequenceDiagram
     FE->>U: navigate to redirectRoute
 ```
 
+> **What it shows:** the complete sign-in conversation between the user, the login page, Google, our backend and the database.
+>
+> **Why it matters:** Google only proves *who* the person is; *what they may open* comes from our database. It shows why a student who is not on the eligible list, or a staff member who picks a section they don't have, is refused even with a valid Google account.
+>
+> **How to read it:** time runs downward. `alt` boxes are the alternative outcomes: the student branch checks the EligibleStudent list, the staff branch checks the chosen permission code. On success the page stores the JWT and redirects to the right dashboard.
+
 ### 10.3 Every protected API call (authorization)
 
 ```mermaid
@@ -712,6 +779,12 @@ flowchart TD
     X1 & X2 & X3 -.-> FE["Frontend client.js: clear session,<br/>show reason on login page"]
 ```
 
+> **What it shows:** the decision tree run on every protected API request.
+>
+> **Why it matters:** because permissions are re-read from the database each time, removing someone's access or removing a student from the eligible list takes effect immediately instead of when their token expires. It also shows the second layer: each department handler checks the step's unit code.
+>
+> **How to read it:** follow the diamonds from the top. Any "no" ends in a 401/403 box; the dotted arrow shows the frontend reacting to a 401 by signing the user out and showing the reason. Reaching "Handler runs" means every check passed.
+
 ### 10.4 Student lifecycle
 
 ```mermaid
@@ -738,6 +811,12 @@ flowchart TD
     Q -->|all approved| DONE[Completed — final]
     DONE --> CERT[Profile page → Download<br/>No Dues certificate PDF]
 ```
+
+> **What it shows:** the student's whole journey from first sign-in to downloading the certificate.
+>
+> **Why it matters:** it is the user guide in one picture: which profile sections are needed (and which placement documents depend on the placement status), when the profile locks and unlocks, and how holds and reapplies loop back until everything is approved.
+>
+> **How to read it:** top to bottom. The profile sections fan out and join at Save; the "Profile complete?" diamond loops back until it is. After Apply the Track page loops while in progress, branches to On Hold → Reapply when a department raises an issue, and ends at Completed → certificate.
 
 ### 10.5 Applying (what the backend does)
 
@@ -773,6 +852,12 @@ sequenceDiagram
     C-->>FE: 201 Application submitted
 ```
 
+> **What it shows:** what the backend does when the student clicks Apply.
+>
+> **Why it matters:** it shows the checks that guard against bad applications (incomplete profile, unknown branch, a second active application) and how the readable application number and all 39–40 steps are created in one go.
+>
+> **How to read it:** time runs downward. The `alt` box lists the refusals. The `loop` shows each department step getting its prerequisites and starting as Pending (no prerequisites) or Locked.
+
 ### 10.6 Department staff: approve / put on hold
 
 ```mermaid
@@ -796,6 +881,12 @@ flowchart TD
     APR --> HO
     REJ --> AP
 ```
+
+> **What it shows:** a department officer's daily routine on their dashboard.
+>
+> **Why it matters:** it explains the actions available on each tab and the special cases: Labs pick a lab, Warden picks a hostel, and HOD/NAD/Store/Accounts can choose earlier departments to re-check when putting an application on hold.
+>
+> **How to read it:** start at sign-in, go through the section-type choice to the Pending tab, then follow either the Approve branch or the Put On Hold branch. Dotted arrows show the Approved and On Hold tabs, from which a decision can still be changed.
 
 ### 10.7 Approve and the dependency engine
 
@@ -828,6 +919,12 @@ sequenceDiagram
     C-->>O: 200 { unlockedCodes }
 ```
 
+> **What it shows:** what happens inside the server when a step is approved.
+>
+> **Why it matters:** it shows how approving one step can automatically open the next departments and, after the last approval, mark the whole application Completed, all without anyone doing it manually.
+>
+> **How to read it:** time runs downward. The first `alt` refuses approval while prerequisites are missing. The dependency engine then finds Locked steps whose prerequisites are now all approved, unlocks them, and recomputes the application status (second `alt`).
+
 ### 10.8 Put on hold
 
 ```mermaid
@@ -857,6 +954,12 @@ sequenceDiagram
     C-->>O: 200 Step rejected
 ```
 
+> **What it shows:** what happens inside the server when a department puts an application on hold.
+>
+> **Why it matters:** it documents the safety rules: a reason and details are compulsory, a completed application can't be held, NAD must choose a department to reset, and resets are limited to departments that come *before* this one (so the chain can never deadlock).
+>
+> **How to read it:** time runs downward. After validation the step is saved as On Hold, the timeline records the reason, the application becomes *action required*, and any later step that was already pending because of this one is locked again.
+
 ### 10.9 Reapply: who gets reset
 
 ```mermaid
@@ -875,6 +978,12 @@ flowchart TD
     RL --> SY[syncRequestStatus → in_progress]
     SY --> OUT([Profile locked again ·<br/>departments see the student's comment + proof])
 ```
+
+> **What it shows:** exactly which departments are reset when the student reapplies.
+>
+> **Why it matters:** reapply is the most complex rule in the system. Only the departments concerned review again, a holder that asked others to re-check waits for them, and the library always restarts as a pair. This avoids making the student go through every department a second time.
+>
+> **How to read it:** for each held step, take the "yes" branch if the holder chose departments to reset (they become Pending, the holder becomes Locked and waits for them) or the "no" branch (the held step simply returns to Pending). The library rule is applied separately. Finally a cascade re-locks later steps and the application returns to *in progress*.
 
 **Example.** The HOD puts the application on hold and chooses *CSE Lab-1* and *Library* to reset. On reapply:
 CSE Lab-1 and Library Staff become **Pending**, the Librarian is **Locked** until Library Staff
@@ -910,6 +1019,12 @@ sequenceDiagram
     BE-->>O: streamed to FileViewerModal (URL never exposed)
 ```
 
+> **What it shows:** how a document travels from the student's computer into storage, and how an officer views it later.
+>
+> **Why it matters:** files are checked before they are stored (only real PDF/JPG/PNG up to 10 MB), and when viewed they pass through the backend, which checks that this department is allowed to see that particular document. The storage address is never revealed to the browser.
+>
+> **How to read it:** the top half is the upload (student → multer → Cloudinary → database), the bottom half is viewing (officer → backend permission check → Cloudinary → streamed back).
+
 ### 10.11 Certificate download
 
 ```mermaid
@@ -934,6 +1049,12 @@ sequenceDiagram
     FE->>FE: check blob ends with %%EOF, then save file
 ```
 
+> **What it shows:** how the No Dues certificate PDF is produced when the student clicks Download.
+>
+> **Why it matters:** the certificate is generated fresh from the database each time, only when every step is approved. It uses real approver names, approval times and the student's bank details, so it can't show anything that didn't actually happen.
+>
+> **How to read it:** time runs downward. The `alt` box is the refusal for unfinished applications. The service then draws the paper form and streams it; the page checks the file is a complete PDF before saving it.
+
 ### 10.12 Department access management
 
 ```mermaid
@@ -956,6 +1077,12 @@ flowchart TD
     RM3 -->|no| RM5[save]
     ADD3 & ADD4 & ED6 & RM4 & RM5 --> EFF([Takes effect on the person's very next request<br/>— verifyToken reads permissions from DB])
 ```
+
+> **What it shows:** how a department (or the admin) adds, edits and removes the people who can use that section.
+>
+> **Why it matters:** departments can manage their own staff without waiting for the admin, but they can't take over an account that also belongs to another section, and a person with no sections left is deleted automatically.
+>
+> **How to read it:** three branches: Add, Edit, Remove. The diamonds are the safety checks. All paths end in the note that the change applies on the person's very next request.
 
 ---
 
@@ -1267,6 +1394,12 @@ flowchart LR
     VB --> VL["no-dues-gravity.vercel.app<br/>env: VITE_API_URL, VITE_GOOGLE_CLIENT_ID"]
     VL -->|API calls| RL
 ```
+
+> **What it shows:** how code gets from the developer's computer to the live site.
+>
+> **Why it matters:** one `git push` to `master` updates both halves: GitHub notifies Render (backend) and Vercel (frontend), each builds its own folder and publishes it with its own environment variables.
+>
+> **How to read it:** left to right: push → GitHub → the two build services → the two live URLs. The last arrow shows the live site calling the live API.
 
 - **Backend (Render web service):** root directory `BACKEND`, build `npm install`, start
   `npm start` (`node server.js`). Environment variables are set under **Environment**. On the free plan the service
