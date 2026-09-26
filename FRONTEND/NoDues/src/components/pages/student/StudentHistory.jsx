@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import api from "../../../api/client";
+import { applicationNo } from "../../../config/applicationNo";
 
 function StatusBadge({ status }) {
   const base =
@@ -71,7 +72,7 @@ function HistoryCard({ item }) {
     <div className="rounded-2xl border border-white/15 bg-white/5 p-6 text-white">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <h2 className="text-sm font-mono text-white/50 mb-1">ID: {item._id || item.id}</h2>
+          <h2 className="mb-1 text-base font-semibold tracking-wide text-white/90">{applicationNo(item)}</h2>
           <p className="text-sm text-white/80">
             Applied on {new Date(item.createdAt).toLocaleDateString()}
           </p>

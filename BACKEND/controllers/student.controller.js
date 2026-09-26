@@ -498,7 +498,17 @@ async function applyForNoDues(req, res) {
             }
         }
 
+        // Readable application number: ND-<year>-<ROLL>, with -2, -3… for later ones in the same year
+        const year = new Date().getFullYear();
+        const baseNo = `ND-${year}-${String(student.rollNo || '').toUpperCase()}`;
+        const sameYear = await NoDuesRequest.countDocuments({
+            studentEmail: student.email.toLowerCase(),
+            createdAt: { $gte: new Date(year, 0, 1), $lt: new Date(year + 1, 0, 1) },
+        });
+        const applicationNo = sameYear > 0 ? `${baseNo}-${sameYear + 1}` : baseNo;
+
         const request = await NoDuesRequest.create({
+            applicationNo,
             studentEmail: student.email,
             studentName: student.name,
             rollNo: student.rollNo,

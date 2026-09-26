@@ -97,7 +97,7 @@ export default function AdminApplications() {
     const filteredApplications = applications.filter((app) => {
         if (statusFilter !== "all" && app.status !== statusFilter) return false;
         if (!query) return true;
-        return [app.studentName, app.rollNo, app.studentEmail, app.branch]
+        return [app.applicationNo, app.studentName, app.rollNo, app.studentEmail, app.branch]
             .some((v) => (v || "").toLowerCase().includes(query));
     });
 
@@ -140,7 +140,7 @@ export default function AdminApplications() {
                 </div>
                 <input
                     type="text"
-                    placeholder="Search by name, roll no, email or branch..."
+                    placeholder="Search by application no, name, roll no, email or branch..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full flex-1 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white placeholder:text-white/35 outline-none focus:border-blue-500"
@@ -183,7 +183,7 @@ export default function AdminApplications() {
                                         >
                                             <td className="px-5 py-4">
                                                 <p className="font-medium text-white">{app.studentName}</p>
-                                                <p className="text-xs text-white/50">{app.rollNo} · {app.branch}</p>
+                                                <p className="text-xs text-white/50">{app.applicationNo} · {app.rollNo} · {app.branch}</p>
                                                 <p className="text-xs text-white/50">{app.studentEmail}</p>
                                             </td>
                                             <td className="px-5 py-4">

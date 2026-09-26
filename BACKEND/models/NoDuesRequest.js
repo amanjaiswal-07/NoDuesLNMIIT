@@ -7,6 +7,8 @@ const noDuesRequestSchema = new mongoose.Schema(
         studentName: { type: String, required: true },
         rollNo: { type: String, required: true },
         branch: { type: String, required: true },
+        // Human-readable application number, e.g. ND-2026-23UEC513 (a later one in the same year gets -2, -3…)
+        applicationNo: { type: String, default: '' },
 
         // ── Profile fields (student fills at apply time) ──────────────────────────
         phone: { type: String, default: '' },

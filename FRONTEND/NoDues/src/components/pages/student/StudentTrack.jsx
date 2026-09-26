@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useOutletContext } from "react-router-dom";
 import api from "../../../api/client";
+import { applicationNo } from "../../../config/applicationNo";
 
 // ── Reapply Modal ─────────────────────────────────────────────────────────────
 
@@ -688,7 +689,7 @@ export default function StudentTrack() {
         <div className="grid gap-3 md:grid-cols-3">
           <div className="rounded-xl border border-white/10 bg-black/20 p-4">
             <p className="text-xs text-white/50">Application ID</p>
-            <p className="mt-1 text-xs font-mono font-medium text-white/80 break-all">{currentApplication._id}</p>
+            <p className="mt-1 text-lg font-semibold tracking-wide text-white break-all">{applicationNo(currentApplication)}</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4">
             <p className="text-xs text-white/50">Submitted</p>

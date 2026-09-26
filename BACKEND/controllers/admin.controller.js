@@ -375,7 +375,7 @@ async function getDashboardStats(req, res) {
  */
 async function buildApplicationRows(filter = {}) {
     const requests = await NoDuesRequest.find(filter)
-        .select('studentName studentEmail rollNo branch status submittedAt completedAt createdAt')
+        .select('applicationNo studentName studentEmail rollNo branch status submittedAt completedAt createdAt')
         .sort({ createdAt: -1 })
         .lean();
 
@@ -393,8 +393,10 @@ async function buildApplicationRows(filter = {}) {
         const held = reqSteps.filter(s => s.status === 'rejected');
         const onHoldAt = held.map(s => ({ name: s.unitLabel, reason: s.rejectionReason || '', since: s.rejectedAt || null }));
         const holdTimes = held.map(s => s.rejectedAt).filter(Boolean).map(d => new Date(d).getTime());
+        const year = new Date(r.submittedAt || r.createdAt || Date.now()).getFullYear();
         return {
             ...r,
+            applicationNo: r.applicationNo || `ND-${year}-${String(r.rollNo || '').toUpperCase()}`,
             approvedSteps: reqSteps.filter(s => s.status === 'approved').length,
             totalSteps: reqSteps.length,
             pendingAt,
@@ -486,7 +488,7 @@ async function getDashboardDetails(req, res) {
 async function getApplicationDetails(req, res) {
     try {
         const request = await NoDuesRequest.findById(req.params.id)
-            .select('studentName studentEmail rollNo branch status submittedAt completedAt createdAt')
+            .select('applicationNo studentName studentEmail rollNo branch status submittedAt completedAt createdAt')
             .lean();
         if (!request) return res.status(404).json({ error: 'Application not found' });
 
