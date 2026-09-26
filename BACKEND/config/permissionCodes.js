@@ -122,18 +122,24 @@ function resolvePermittedUnitCodes(permissionCodes = []) {
         if (GROUP_PERMISSION_MAP[code]) {
             codes.add(code); // Retain authorizative access to the master group definition node
             GROUP_PERMISSION_MAP[code].forEach(c => codes.add(c));
-        } else {
+        } else if (ALL_UNIT_CODES[code]) {
             codes.add(code); // direct unit code
         }
+        // Anything else (e.g. 'student') grants no clearance/department access
     }
 
     return codes;
 }
+
+// Department codes whose staff list can be managed from a department dashboard
+// (every dashboard route except /admin). 'student' and 'admin' are deliberately excluded.
+const DEPARTMENT_ACCESS_CODES = Object.values(ROUTE_TO_PERMISSION).filter(code => code !== 'admin');
 
 module.exports = {
     ALL_UNIT_CODES,
     GROUP_PERMISSION_MAP,
     ROUTE_TO_PERMISSION,
     PERMISSION_TO_ROUTE,
+    DEPARTMENT_ACCESS_CODES,
     resolvePermittedUnitCodes,
 };

@@ -9,6 +9,14 @@ const studentController = require('../controllers/student.controller');
 // All clearance routes require authentication. Specific unitCode authorization happens in attachPermissionChecker
 router.use(verifyToken);
 
+// Students (tokens issued via the Student login) never have department access
+router.use((req, res, next) => {
+    if (req.user.role === 'student') {
+        return res.status(403).json({ error: 'Access denied. Department access required.' });
+    }
+    next();
+});
+
 // Middleware that supplies req.hasPermissionFor(unitCode)
 router.use(attachPermissionChecker);
 

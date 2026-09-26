@@ -2,7 +2,7 @@ const ClearanceStep = require('../models/ClearanceStep');
 const StepActionLog = require('../models/StepActionLog');
 const NoDuesRequest = require('../models/NoDuesRequest');
 const User = require('../models/User');
-const { ROUTE_TO_PERMISSION } = require('../config/permissionCodes');
+const { DEPARTMENT_ACCESS_CODES } = require('../config/permissionCodes');
 const { unlockDependents, relockDependents, syncRequestStatus } = require('../services/dependencyEngine');
 
 // ── GET Pending / Approved / Rejected ──────────────────────────────────────────
@@ -358,12 +358,29 @@ async function getStepFull(req, res) {
 
 // ── Department Staff Access Management ────────────────────────────────────────
 
+const isAdmin = (req) => Array.isArray(req.user.permissionCodes) && req.user.permissionCodes.includes('admin');
+
+/**
+ * Validates that :unitCode is a department whose access can be managed and that
+ * the caller belongs to it (or is admin). Sends the error response and returns
+ * false if not.
+ */
+function checkManageableUnit(req, res, unitCode) {
+    if (!DEPARTMENT_ACCESS_CODES.includes(unitCode)) {
+        res.status(400).json({ error: `Unknown department: ${unitCode}` });
+        return false;
+    }
+    if (!req.hasPermissionFor(unitCode)) {
+        res.status(403).json({ error: `Not authorized for department: ${unitCode}` });
+        return false;
+    }
+    return true;
+}
+
 async function getDepartmentAccess(req, res) {
     try {
         const { unitCode } = req.params;
-        if (!req.hasPermissionFor(unitCode)) {
-            return res.status(403).json({ error: `Not authorized for unitCode: ${unitCode}` });
-        }
+        if (!checkManageableUnit(req, res, unitCode)) return;
 
         // Find users who have this specific unitCode in their permissionCodes
         const users = await User.find({ permissionCodes: unitCode }).sort({ createdAt: -1 });
@@ -376,9 +393,7 @@ async function getDepartmentAccess(req, res) {
 async function addDepartmentAccess(req, res) {
     try {
         const { unitCode } = req.params;
-        if (!req.hasPermissionFor(unitCode)) {
-            return res.status(403).json({ error: `Not authorized to add access to ${unitCode}` });
-        }
+        if (!checkManageableUnit(req, res, unitCode)) return;
 
         const { name, email } = req.body;
         if (!name || !email) {
@@ -412,13 +427,24 @@ async function addDepartmentAccess(req, res) {
 async function editDepartmentAccess(req, res) {
     try {
         const { unitCode, userId } = req.params;
-        if (!req.hasPermissionFor(unitCode)) {
-            return res.status(403).json({ error: `Not authorized to edit access in ${unitCode}` });
-        }
+        if (!checkManageableUnit(req, res, unitCode)) return;
 
         const { name, email } = req.body;
         if (!name || !email) {
             return res.status(400).json({ error: 'name and email are required' });
+        }
+
+        const user = await User.findById(userId);
+        if (!user || !user.permissionCodes.includes(unitCode)) {
+            return res.status(404).json({ error: 'User not found in this department' });
+        }
+
+        // A user who also has access elsewhere (another department, admin, student)
+        // can only be renamed/re-emailed by an admin — otherwise one department
+        // could take over another department's or the admin's login.
+        const hasOtherAccess = user.permissionCodes.some(c => c !== unitCode);
+        if (hasOtherAccess && !isAdmin(req)) {
+            return res.status(403).json({ error: 'This user also has access to other sections. Only an admin can change their name or email.' });
         }
 
         const normalizedEmail = email.trim().toLowerCase();
@@ -427,9 +453,6 @@ async function editDepartmentAccess(req, res) {
         if (existingEmailUser && existingEmailUser.id !== userId) {
             return res.status(409).json({ error: 'Email already exists. Please use a different email or merge permissions.' });
         }
-
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ error: 'User not found' });
 
         user.name = name.trim();
         user.email = normalizedEmail;
@@ -444,12 +467,12 @@ async function editDepartmentAccess(req, res) {
 async function removeDepartmentAccess(req, res) {
     try {
         const { unitCode, userId } = req.params;
-        if (!req.hasPermissionFor(unitCode)) {
-            return res.status(403).json({ error: `Not authorized to remove access from ${unitCode}` });
-        }
+        if (!checkManageableUnit(req, res, unitCode)) return;
 
         const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ error: 'User not found' });
+        if (!user || !user.permissionCodes.includes(unitCode)) {
+            return res.status(404).json({ error: 'User not found in this department' });
+        }
 
         // Remove just this unitCode from the user's permissions
         user.permissionCodes = user.permissionCodes.filter(c => c !== unitCode);

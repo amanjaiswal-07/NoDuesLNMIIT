@@ -693,12 +693,10 @@ async function reapply(req, res) {
 // ── Reapply Proof Proxy (for department ViewDetailsModal) ─────────────────────
 
 /**
- * GET /api/student/reapply/proof/:stepId/:index
+ * GET /api/student/reapply/proof/:stepId/:index      (student who owns the request)
+ * GET /api/clearance/reapply/proof/:stepId/:index    (staff with permission for the step)
  * Proxies the student's reapply proof file stored in ClearanceStep.studentProofUrls.
- * Requires staff auth — verified by checking that the step belongs to a request
- * associated with a student, then streaming the Cloudinary file.
- * Note: this route is called from the CLEARANCE (department) side via a dedicated
- * clearance route, but the proxy logic lives here for co-location with reapply.
+ * The proxy logic lives here for co-location with reapply.
  */
 async function getReapplyProof(req, res) {
     try {
@@ -707,6 +705,12 @@ async function getReapplyProof(req, res) {
 
         const step = await ClearanceStep.findById(stepId).populate('requestId');
         if (!step) return res.status(404).json({ error: 'Step not found' });
+
+        // Clearance router attaches hasPermissionFor; the student router does not.
+        const allowed = typeof req.hasPermissionFor === 'function'
+            ? req.hasPermissionFor(step.unitCode)
+            : (step.requestId?.studentEmail || '').toLowerCase() === (req.user.email || '').toLowerCase();
+        if (!allowed) return res.status(403).json({ error: 'Not authorized to view this file' });
 
         const urls = step.studentProofUrls || [];
         if (index < 0 || index >= urls.length) {
