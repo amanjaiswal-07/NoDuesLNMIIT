@@ -1484,7 +1484,7 @@ Thanks to the friends who contributed to this project:
 
 <table>
   <tr>
-    <td align="center"><a href="https://github.com/parth420i"><img src="https://github.com/parth420i.png" width="80" alt="parth420i"/><br/><b>@parth420i</b></a></td>
-    <td align="center"><a href="https://github.com/jeeninub"><img src="https://github.com/jeeninub.png" width="80" alt="jeeninub"/><br/><b>@jeeninub</b></a></td>
+    <td align="center"><a href="https://github.com/parth420i"><img src="https://github.com/parth420i.png" width="80" alt="parth420i"/><br/><b>Parth Nalwaya</b><br/>@parth420i</a></td>
+    <td align="center"><a href="https://github.com/jeeninub"><img src="https://github.com/jeeninub.png" width="80" alt="jeeninub"/><br/><b>Sujal Jain</b><br/>@jeeninub</a></td>
   </tr>
 </table>
