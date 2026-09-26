@@ -315,13 +315,109 @@ async function removeStaffAccess(req, res) {
 
 // ── Applications ───────────────────────────────────────────────────────────────
 
-/** GET /api/admin/applications */
+// Labs are shown as their lab group (e.g. "Labs - MECH"), everything else by its own label
+const LAB_GROUP_LABELS = {
+    labs_cse_cce: 'Labs - CSE/CCE',
+    labs_ece_cce: 'Labs - ECE/CCE',
+    labs_mech: 'Labs - MECH',
+    labs_physics: 'Labs - Physics',
+};
+
+const departmentOf = (step) => (step.unitGroup && LAB_GROUP_LABELS[step.unitGroup])
+    ? { key: step.unitGroup, name: LAB_GROUP_LABELS[step.unitGroup] }
+    : { key: step.unitCode, name: step.unitLabel };
+
+/** GET /api/admin/dashboard-stats */
+async function getDashboardStats(req, res) {
+    try {
+        const [authorizedUsers, eligibleStudents, profilesCompleted, requestCounts, openSteps] = await Promise.all([
+            User.countDocuments({ permissionCodes: { $elemMatch: { $ne: 'student' } } }),
+            EligibleStudent.countDocuments(),
+            EligibleStudent.countDocuments({ profileCompleted: true }),
+            NoDuesRequest.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+            ClearanceStep.find({ status: { $in: ['pending', 'rejected'] } }, 'unitCode unitLabel unitGroup status').lean(),
+        ]);
+
+        const byStatus = Object.fromEntries(requestCounts.map(r => [r._id, r.count]));
+        const completedApplications = byStatus.approved || 0;
+        const onHoldApplications = byStatus.action_required || 0;
+        const totalApplications = requestCounts.reduce((sum, r) => sum + r.count, 0);
+
+        // Per-department queue sizes (pending = waiting for that department, onHold = put on hold by it)
+        const overview = {};
+        for (const step of openSteps) {
+            const { key, name } = departmentOf(step);
+            overview[key] = overview[key] || { code: key, name, pendingCount: 0, onHoldCount: 0 };
+            if (step.status === 'pending') overview[key].pendingCount++;
+            else overview[key].onHoldCount++;
+        }
+        const departmentOverview = Object.values(overview)
+            .sort((a, b) => (b.pendingCount + b.onHoldCount) - (a.pendingCount + a.onHoldCount));
+
+        res.json({
+            authorizedUsers,
+            eligibleStudents,
+            profilesCompleted,
+            totalApplications,
+            activeApplications: totalApplications - completedApplications,
+            onHoldApplications,
+            completedApplications,
+            departmentOverview,
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}
+
+/** GET /api/admin/applications — one row per application with step progress */
 async function listApplications(req, res) {
     try {
-        const applications = await NoDuesRequest.find()
-            .populate('studentId', 'name email rollNo branch')
-            .sort({ createdAt: -1 });
+        const requests = await NoDuesRequest.find()
+            .select('studentName studentEmail rollNo branch status submittedAt completedAt createdAt')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        const steps = await ClearanceStep.find({ requestId: { $in: requests.map(r => r._id) } })
+            .select('requestId unitCode unitLabel unitGroup status rejectionReason')
+            .lean();
+
+        const stepsByRequest = {};
+        for (const s of steps) (stepsByRequest[String(s.requestId)] = stepsByRequest[String(s.requestId)] || []).push(s);
+
+        const applications = requests.map(r => {
+            const reqSteps = stepsByRequest[String(r._id)] || [];
+            // Collapse labs into their group so the list stays readable
+            const pendingAt = [...new Set(reqSteps.filter(s => s.status === 'pending').map(s => departmentOf(s).name))];
+            const onHoldAt = reqSteps.filter(s => s.status === 'rejected')
+                .map(s => ({ name: s.unitLabel, reason: s.rejectionReason || '' }));
+            return {
+                ...r,
+                approvedSteps: reqSteps.filter(s => s.status === 'approved').length,
+                totalSteps: reqSteps.length,
+                pendingAt,
+                onHoldAt,
+            };
+        });
+
         res.json({ applications });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}
+
+/** GET /api/admin/applications/:id — all steps of one application */
+async function getApplicationDetails(req, res) {
+    try {
+        const request = await NoDuesRequest.findById(req.params.id)
+            .select('studentName studentEmail rollNo branch status submittedAt completedAt createdAt')
+            .lean();
+        if (!request) return res.status(404).json({ error: 'Application not found' });
+
+        const steps = await ClearanceStep.find({ requestId: request._id })
+            .select('unitCode unitLabel unitGroup status actionBy actionAt rejectionReason rejectionDescription')
+            .lean();
+
+        res.json({ application: request, steps });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -330,5 +426,5 @@ async function listApplications(req, res) {
 module.exports = {
     listEligibleStudents, addEligibleStudent, bulkAddEligibleStudents, bulkRemoveEligibleStudents, removeEligibleStudent, editEligibleStudent,
     listStaffAccess, addStaffAccess, updateStaffAccess, removeStaffAccess,
-    listApplications,
+    getDashboardStats, listApplications, getApplicationDetails,
 };

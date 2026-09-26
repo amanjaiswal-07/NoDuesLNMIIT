@@ -38,3 +38,5 @@ Thumbs.db
 
 # Optional: uploads (if you add later)
 uploads/
+# Local data backups from maintenance scripts (contain personal data)
+backups/

@@ -5,7 +5,9 @@ export default function AdminHome() {
   const [statsData, setStatsData] = useState({
     authorizedUsers: 0,
     eligibleStudents: 0,
+    profilesCompleted: 0,
     activeApplications: 0,
+    onHoldApplications: 0,
     completedApplications: 0,
   });
   const [departmentOverview, setDepartmentOverview] = useState([]);
@@ -21,7 +23,9 @@ export default function AdminHome() {
           setStatsData({
             authorizedUsers: res.data.authorizedUsers || 0,
             eligibleStudents: res.data.eligibleStudents || 0,
+            profilesCompleted: res.data.profilesCompleted || 0,
             activeApplications: res.data.activeApplications || 0,
+            onHoldApplications: res.data.onHoldApplications || 0,
             completedApplications: res.data.completedApplications || 0,
           });
           setDepartmentOverview(res.data.departmentOverview || []);
@@ -39,7 +43,9 @@ export default function AdminHome() {
   const stats = [
     { label: "Authorized Department Users", value: statsData.authorizedUsers },
     { label: "Eligible Students", value: statsData.eligibleStudents },
+    { label: "Profiles Completed", value: statsData.profilesCompleted },
     { label: "Active Applications", value: statsData.activeApplications },
+    { label: "Applications On Hold", value: statsData.onHoldApplications },
     { label: "Completed No Dues", value: statsData.completedApplications },
   ];
 
@@ -61,7 +67,7 @@ export default function AdminHome() {
         </p>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
         {stats.map((item) => (
           <div
             key={item.label}
@@ -94,9 +100,14 @@ export default function AdminHome() {
           <div className="mt-4 space-y-3 text-sm text-white/75">
             {departmentOverview.length > 0 ? (
               departmentOverview.map((dept, index) => (
-                <div key={index} className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-3">
+                <div key={dept.code || index} className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-3">
                   <span>{dept.name}</span>
-                  <span>{dept.pendingCount} pending</span>
+                  <span className="flex gap-3">
+                    <span className="text-amber-300">{dept.pendingCount} pending</span>
+                    {dept.onHoldCount > 0 && (
+                      <span className="text-rose-300">{dept.onHoldCount} on hold</span>
+                    )}
+                  </span>
                 </div>
               ))
             ) : (
