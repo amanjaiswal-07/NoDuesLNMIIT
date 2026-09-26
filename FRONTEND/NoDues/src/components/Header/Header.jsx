@@ -128,6 +128,7 @@ const ROLE_TITLES = {
 
 export default function Header({
   role,
+  title: titleProp, // department's own display name (e.g. "Central Library - Staff")
   pendingCount = 0,
   subTitle = "",
 
@@ -140,7 +141,7 @@ export default function Header({
 
   // default basePath => "/medical", "/accounts" etc.
   const basePath = basePathProp || `/${role}`;
-  const title = ROLE_TITLES[role] || role;
+  const title = titleProp || ROLE_TITLES[role] || role;
 
   const handleLogout = () => {
     localStorage.removeItem("token");

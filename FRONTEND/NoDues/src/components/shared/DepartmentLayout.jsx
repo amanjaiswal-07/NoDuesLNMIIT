@@ -63,6 +63,7 @@ export default function DepartmentLayout({ role, unitCodes, title, basePath, hea
         <div className="min-h-screen bg-neutral-900 text-white">
             <Header
                 role={role}
+                title={title}
                 basePath={basePath}
                 pendingCount={pendingCountFilter ? pending.filter(pendingCountFilter).length : pending.length}
                 paths={headerPaths}
