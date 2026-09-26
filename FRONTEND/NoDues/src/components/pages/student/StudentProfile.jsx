@@ -14,6 +14,9 @@ function CertificateCard() {
     setError("");
     try {
       const res = await api.get("/student/certificate", { responseType: "blob" });
+      // Never save a cut-off file (e.g. if the server restarted mid-download)
+      const tail = await res.data.slice(-1024).text();
+      if (!tail.includes("%%EOF")) throw new Error("incomplete");
       const name = /filename="([^"]+)"/.exec(res.headers["content-disposition"] || "")?.[1] || "No-Dues-Certificate.pdf";
       const url = URL.createObjectURL(res.data);
       const a = document.createElement("a");
