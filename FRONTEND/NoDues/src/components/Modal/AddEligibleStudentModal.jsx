@@ -1,3 +1,5 @@
+import { BRANCHES } from "../../config/branches";
+
 export default function AddEligibleStudentModal({
   isOpen,
   formData,
@@ -56,14 +58,17 @@ export default function AddEligibleStudentModal({
 
           <div>
             <label className="mb-2 block text-sm text-white/70">Branch</label>
-            <input
-              type="text"
+            <select
               name="branch"
               value={formData.branch}
               onChange={onChange}
-              placeholder="Enter branch"
-              className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white placeholder:text-white/35 outline-none focus:border-blue-500"
-            />
+              className="w-full rounded-xl border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-white outline-none focus:border-blue-500"
+            >
+              <option value="">Select branch</option>
+              {BRANCHES.map((b) => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
           </div>
 
           <div className="flex justify-end gap-3 pt-3">

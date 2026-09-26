@@ -4,6 +4,7 @@ import { useOutletContext } from "react-router-dom";
 import ApprovedRequests from "../../Request/ApprovedRequests";
 import RejectModal from "../../Modal/RejectModal";
 import ViewDetailsModal from "../../Modal/ViewDetailsModal";
+import { BRANCH_TO_HOD } from "../../../config/branches";
 
 const STORE_REASONS = [
   { value: "general_equipment", label: "Institute equipment issued to the student", requiresText: true },
@@ -11,14 +12,6 @@ const STORE_REASONS = [
   { value: "approval_was_mistake", label: "Approval was made in error", requiresText: true },
   { value: "misc", label: "Miscellaneous", requiresText: true },
 ];
-
-// Branch → HOD unit code
-const BRANCH_TO_HOD = {
-  CSE: { value: "hod_cse", label: "HOD - CSE" },
-  ECE: { value: "hod_ece", label: "HOD - ECE" },
-  CCE: { value: "hod_cce", label: "HOD - CCE" },
-  MECH: { value: "hod_mech", label: "HOD - MECH" },
-};
 
 /**
  * Returns dynamic dep options for Store based on student's branch and hostel.

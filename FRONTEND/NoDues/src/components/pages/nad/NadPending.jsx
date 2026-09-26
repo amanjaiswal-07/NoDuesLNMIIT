@@ -4,6 +4,7 @@
 // import PendingRequests from "../../Request/PendingRequests";
 // import RejectModal from "../../Modal/RejectModal";
 // import ViewDetailsModal from "../../Modal/ViewDetailsModal";
+import { BRANCH_TO_HOD } from "../../../config/branches";
 
 // const NAD_REASONS = [
 //   { value: "apaar", label: "APAAR ID not submitted / verified", requiresText: true },
@@ -84,14 +85,7 @@ const NAD_REASONS = [
   { value: "misc", label: "Miscellaneous" },
 ];
 
-// Branch-to-HOD mapping — returns only the relevant HOD for a student's branch
-const BRANCH_TO_HOD = {
-  CSE: { value: "hod_cse", label: "HOD - CSE" },
-  ECE: { value: "hod_ece", label: "HOD - ECE" },
-  CCE: { value: "hod_cce", label: "HOD - CCE" },
-  MECH: { value: "hod_mech", label: "HOD - MECH" },
-};
-
+// Returns only the relevant HOD for a student's branch
 function getHodOptionForStudent(student) {
   const branch = (student?.branch || "").toUpperCase();
   const hod = BRANCH_TO_HOD[branch];

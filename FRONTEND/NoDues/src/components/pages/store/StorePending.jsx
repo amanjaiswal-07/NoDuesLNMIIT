@@ -5,20 +5,13 @@ import PendingRequests from "../../Request/PendingRequests";
 import ConfirmModal from "../../Modal/ConfirmModal";
 import RejectModal from "../../Modal/RejectModal";
 import ViewDetailsModal from "../../Modal/ViewDetailsModal";
+import { BRANCH_TO_HOD } from "../../../config/branches";
 
 const STORE_REASONS = [
   { value: "general_equipment", label: "Institute equipment issued to the student" },
   { value: "club_equipment", label: "Club inventory issued on behalf of the student" },
   { value: "misc", label: "Miscellaneous" },
 ];
-
-// Branch → HOD unit code
-const BRANCH_TO_HOD = {
-  CSE: { value: "hod_cse", label: "HOD - CSE" },
-  ECE: { value: "hod_ece", label: "HOD - ECE" },
-  CCE: { value: "hod_cce", label: "HOD - CCE" },
-  MECH: { value: "hod_mech", label: "HOD - MECH" },
-};
 
 /**
  * Returns dynamic dep options for Store based on student's branch and hostel.

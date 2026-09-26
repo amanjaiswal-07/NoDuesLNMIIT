@@ -29,6 +29,7 @@ const EligibleStudent = require('../models/EligibleStudent');
 const cloudinary = require('../config/cloudinary');
 const { createClearanceSteps } = require('../services/workflowService');
 const { syncRequestStatus, relockDependents } = require('../services/dependencyEngine');
+const { isValidBranch } = require('../config/workflowConfig');
 
 // ── Cloudinary Utilities ──────────────────────────────────────────────────────
 
@@ -440,6 +441,12 @@ async function applyForNoDues(req, res) {
         if (!student.profileCompleted) {
             return res.status(403).json({
                 error: 'Profile is incomplete. Please complete your profile before applying.',
+            });
+        }
+
+        if (!isValidBranch(student.branch)) {
+            return res.status(400).json({
+                error: `Your branch "${student.branch}" is not recognised. Please contact the admin to correct it before applying.`,
             });
         }
 

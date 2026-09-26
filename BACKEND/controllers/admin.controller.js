@@ -3,6 +3,10 @@ const User = require('../models/User');
 const NoDuesRequest = require('../models/NoDuesRequest');
 const ClearanceStep = require('../models/ClearanceStep');
 const { ROUTE_TO_PERMISSION } = require('../config/permissionCodes');
+const { VALID_BRANCHES, normalizeBranch, isValidBranch } = require('../config/workflowConfig');
+
+const unknownBranchMessage = (branch) =>
+    `Unknown branch "${branch}". Allowed: ${VALID_BRANCHES.join(', ')}`;
 
 // ── Eligible Students ─────────────────────────────────────────────────────────
 
@@ -23,6 +27,9 @@ async function addEligibleStudent(req, res) {
         if (!name || !email || !rollNo || !branch) {
             return res.status(400).json({ error: 'name, email, rollNo, branch are required' });
         }
+        if (!isValidBranch(branch)) {
+            return res.status(400).json({ error: unknownBranchMessage(branch) });
+        }
 
         const existing = await EligibleStudent.findOne({
             $or: [{ email: email.toLowerCase() }, { rollNo: rollNo.trim() }],
@@ -35,7 +42,7 @@ async function addEligibleStudent(req, res) {
             name: name.trim(),
             email: email.trim().toLowerCase(),
             rollNo: rollNo.trim().toUpperCase(),
-            branch: branch.trim().toUpperCase(),
+            branch: normalizeBranch(branch),
             addedBy: req.user.id,
         });
 
@@ -65,10 +72,14 @@ async function bulkAddEligibleStudents(req, res) {
             const email = (row.email || '').trim().toLowerCase();
             const rollNo = (row.rollNo || '').trim().toUpperCase();
             const name = (row.name || '').trim();
-            const branch = (row.branch || '').trim().toUpperCase();
+            const branch = normalizeBranch(row.branch);
 
             if (!email || !rollNo || !name || !branch) {
                 skipped.push({ row, reason: 'Missing fields' });
+                continue;
+            }
+            if (!isValidBranch(branch)) {
+                skipped.push({ row, reason: unknownBranchMessage(row.branch) });
                 continue;
             }
             if (existingEmails.has(email) || existingEmails.has(rollNo)) {
@@ -100,6 +111,9 @@ async function editEligibleStudent(req, res) {
         if (!name || !email || !rollNo || !branch) {
             return res.status(400).json({ error: 'name, email, rollNo, branch are required' });
         }
+        if (!isValidBranch(branch)) {
+            return res.status(400).json({ error: unknownBranchMessage(branch) });
+        }
 
         const normalizedEmail = email.trim().toLowerCase();
         const normalizedRollNo = rollNo.trim().toUpperCase();
@@ -126,7 +140,7 @@ async function editEligibleStudent(req, res) {
                     name: name.trim(),
                     email: normalizedEmail,
                     rollNo: normalizedRollNo,
-                    branch: branch.trim().toUpperCase(),
+                    branch: normalizeBranch(branch),
                     graduation,
                 },
             },

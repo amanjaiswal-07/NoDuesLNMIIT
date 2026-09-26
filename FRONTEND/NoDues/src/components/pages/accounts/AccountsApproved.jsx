@@ -4,6 +4,7 @@ import { useOutletContext } from "react-router-dom";
 import ApprovedRequests from "../../Request/ApprovedRequests";
 import RejectModal from "../../Modal/RejectModal";
 import ViewDetailsModal from "../../Modal/ViewDetailsModal";
+import { BRANCH_TO_HOD } from "../../../config/branches";
 
 const ACCOUNTS_REASONS = [
   { value: "fees_pending", label: "Institute fee payment pending (fees not fully deposited)", requiresText: true },
@@ -12,14 +13,6 @@ const ACCOUNTS_REASONS = [
   { value: "approval_was_mistake", label: "Approval was made in error", requiresText: true },
   { value: "misc", label: "Miscellaneous", requiresText: true },
 ];
-
-// ── Branch → HOD ─────────────────────────────────────────────────────────────
-const BRANCH_TO_HOD = {
-  CSE: { value: "hod_cse", label: "HOD - CSE" },
-  ECE: { value: "hod_ece", label: "HOD - ECE" },
-  CCE: { value: "hod_cce", label: "HOD - CCE" },
-  MECH: { value: "hod_mech", label: "HOD - MECH" },
-};
 
 const CSE_LAB_OPTIONS = [
   { value: "cse_lab_1", label: "CSE Lab-1" },

@@ -259,7 +259,13 @@ export default function AdminEligibleStudents() {
         } else {
           try {
             const res = await api.post('/admin/eligible-students/bulk', { students: newStudents });
-            setMessage(`${res.data.imported} students imported successfully. ${res.data.skipped} skipped.`);
+            const skippedLines = (res.data.skippedDetails || []).map(
+              (s) => `• ${s.row?.rollNo || s.row?.email || "row"}: ${s.reason}`
+            );
+            setMessage(
+              `${res.data.imported} students imported successfully. ${res.data.skipped} skipped.` +
+              (skippedLines.length ? `\n${skippedLines.join("\n")}` : "")
+            );
             fetchStudents();
           } catch (err) {
             setMessage(err.response?.data?.error || 'Bulk import failed');
@@ -345,7 +351,7 @@ export default function AdminEligibleStudents() {
         </div>
 
         {message && (
-          <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-sm text-blue-300">
+          <div className="whitespace-pre-line rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-sm text-blue-300">
             {message}
           </div>
         )}

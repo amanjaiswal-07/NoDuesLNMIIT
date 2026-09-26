@@ -4,6 +4,7 @@ import { useOutletContext } from "react-router-dom";
 import ApprovedRequests from "../../Request/ApprovedRequests";
 import RejectModal from "../../Modal/RejectModal";
 import ViewDetailsModal from "../../Modal/ViewDetailsModal";
+import { BRANCH_TO_HOD } from "../../../config/branches";
 
 const NAD_REASONS = [
   { value: "apaar", label: "APAAR ID not submitted / verified", requiresText: true },
@@ -14,12 +15,6 @@ const NAD_REASONS = [
   { value: "misc", label: "Miscellaneous", requiresText: true },
 ];
 
-const BRANCH_TO_HOD = {
-  CSE: { value: "hod_cse", label: "HOD - CSE" },
-  ECE: { value: "hod_ece", label: "HOD - ECE" },
-  CCE: { value: "hod_cce", label: "HOD - CCE" },
-  MECH: { value: "hod_mech", label: "HOD - MECH" },
-};
 
 function getHodOptionForStudent(student) {
   const branch = (student?.branch || "").toUpperCase();

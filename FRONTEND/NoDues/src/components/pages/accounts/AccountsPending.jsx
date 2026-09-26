@@ -5,6 +5,7 @@ import PendingRequests from "../../Request/PendingRequests";
 import ConfirmModal from "../../Modal/ConfirmModal";
 import RejectModal from "../../Modal/RejectModal";
 import ViewDetailsModal from "../../Modal/ViewDetailsModal";
+import { BRANCH_TO_HOD } from "../../../config/branches";
 
 const ACCOUNTS_REASONS = [
   { value: "fees_pending", label: "Institute fee payment pending" },
@@ -12,14 +13,6 @@ const ACCOUNTS_REASONS = [
   { value: "fine_pending", label: "Fine/penalty pending" },
   { value: "misc", label: "Miscellaneous" },
 ];
-
-// ── Branch → HOD ─────────────────────────────────────────────────────────────
-const BRANCH_TO_HOD = {
-  CSE: { value: "hod_cse", label: "HOD - CSE" },
-  ECE: { value: "hod_ece", label: "HOD - ECE" },
-  CCE: { value: "hod_cce", label: "HOD - CCE" },
-  MECH: { value: "hod_mech", label: "HOD - MECH" },
-};
 
 // ── Lab options by branch ─────────────────────────────────────────────────────
 const CSE_LAB_OPTIONS = [

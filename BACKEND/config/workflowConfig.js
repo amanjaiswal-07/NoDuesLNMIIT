@@ -8,6 +8,36 @@
  * using student.branch — see workflowService.js.
  */
 
+// ── Branches ──────────────────────────────────────────────────────────────────
+// Single source of truth: every valid student branch and the HOD it goes to.
+// To add a branch: add it here AND add its hod_* code in config/permissionCodes.js.
+const BRANCH_TO_HOD = {
+    CSE: 'hod_cse',
+    ECE: 'hod_ece',
+    CCE: 'hod_cce',
+    MECH: 'hod_mech',
+};
+
+const VALID_BRANCHES = Object.keys(BRANCH_TO_HOD);
+
+/** Normalises a branch string ("  cse " → "CSE"). */
+function normalizeBranch(branch) {
+    return String(branch || '').trim().toUpperCase();
+}
+
+function isValidBranch(branch) {
+    return Object.prototype.hasOwnProperty.call(BRANCH_TO_HOD, normalizeBranch(branch));
+}
+
+/** Returns the HOD unit code for a branch; throws for unknown branches (no silent fallback). */
+function getHodCodeForBranch(branch) {
+    const b = normalizeBranch(branch);
+    if (!isValidBranch(b)) {
+        throw new Error(`Unknown branch "${branch}". Allowed: ${VALID_BRANCHES.join(', ')}`);
+    }
+    return BRANCH_TO_HOD[b];
+}
+
 // All CSE lab codes
 const CSE_LABS = [
     'cse_lab_1', 'cse_lab_2', 'cse_lab_3', 'cse_lab_cmlbda',
@@ -57,13 +87,8 @@ const STATIC_STEP_DEPENDENCIES = {
  * @returns {string[]} array of dependency unit codes
  */
 function getDependenciesForUnit(unitCode, branch) {
-    // Map branch to its HOD code
-    const HOD_CODE = {
-        CSE: 'hod_cse',
-        CCE: 'hod_cce',
-        ECE: 'hod_ece',
-        MECH: 'hod_mech',
-    }[branch.toUpperCase()] || 'hod_cse'; // fallback
+    // The student's own HOD (throws for an unknown branch)
+    const HOD_CODE = getHodCodeForBranch(branch);
 
     switch (unitCode) {
         case 'library_librarian':
@@ -111,7 +136,7 @@ function getDependenciesForUnit(unitCode, branch) {
  * @returns {string[]}
  */
 function getApplicableUnitCodes(branch) {
-    const b = branch.toUpperCase();
+    const b = normalizeBranch(branch);
 
     // Universal departments — every student regardless of branch
     const universal = [
@@ -132,18 +157,14 @@ function getApplicableUnitCodes(branch) {
         ...PHYSICS_LABS,
     ];
 
-    // HOD is branch-specific — student only goes to their own HOD
-    const HOD_CODE = {
-        CSE: 'hod_cse',
-        CCE: 'hod_cce',
-        ECE: 'hod_ece',
-        MECH: 'hod_mech',
-    }[b] || 'hod_cse';
+    // HOD is branch-specific — student only goes to their own HOD (throws for an unknown branch)
+    const HOD_CODE = getHodCodeForBranch(b);
 
     return [...universal, ...allLabs, HOD_CODE];
 }
 
 module.exports = {
+    BRANCH_TO_HOD, VALID_BRANCHES, normalizeBranch, isValidBranch, getHodCodeForBranch,
     CSE_LABS, ECE_LABS, MECH_LABS, PHYSICS_LABS, ALL_LAB_CODES,
     HOD_PREREQUISITES,
     getDependenciesForUnit,
