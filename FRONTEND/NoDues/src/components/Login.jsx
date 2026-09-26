@@ -1,6 +1,6 @@
 import { useState, useLayoutEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GoogleLogin } from '@react-oauth/google';
+import GoogleSignInButton from './GoogleSignInButton';
 import axios from 'axios';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/solid';
 import logo from '../assets/LNMIIT_logo.png';
@@ -146,15 +146,10 @@ const Login = () => {
             {isLoading ? (
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
             ) : buttonWidth && (
-              <GoogleLogin
-                key={buttonWidth}
+              <GoogleSignInButton
                 onSuccess={handleGoogleSuccess}
                 onError={handleGoogleError}
-                theme="filled_blue"
-                size="large"
-                shape="pill"
-                text="continue_with"
-                width={String(buttonWidth)}
+                width={buttonWidth}
               />
             )}
           </div>
