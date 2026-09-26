@@ -30,6 +30,8 @@ const cloudinary = require('../config/cloudinary');
 const { createClearanceSteps } = require('../services/workflowService');
 const { syncRequestStatus, relockDependents } = require('../services/dependencyEngine');
 const { isValidBranch } = require('../config/workflowConfig');
+const User = require('../models/User');
+const { writeCertificate } = require('../services/certificateService');
 
 // ── Cloudinary Utilities ──────────────────────────────────────────────────────
 
@@ -871,7 +873,45 @@ async function getRequestLogs(req, res) {
     }
 }
 
+// GET /student/certificate — the filled No Dues form, only once every department has approved
+async function getCertificate(req, res) {
+    try {
+        const emailRegex = new RegExp(`^${req.user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+        const request = await NoDuesRequest.findOne({ studentEmail: emailRegex, status: 'approved' }).sort({ createdAt: -1 }).lean();
+        if (!request) {
+            return res.status(404).json({ error: 'Your No Dues certificate will be available once every department has approved your application.' });
+        }
+
+        const steps = await ClearanceStep.find({ requestId: request._id }).lean();
+        if (steps.length === 0 || steps.some(s => s.status !== 'approved')) {
+            return res.status(404).json({ error: 'Your No Dues certificate will be available once every department has approved your application.' });
+        }
+
+        const profile = (await EligibleStudent.findOne({ email: emailRegex }).lean()) || {};
+
+        // Approver names for the "Signature of HOS" column (fall back to their email)
+        const approverEmails = [...new Set(steps.map(s => (s.actionBy || '').toLowerCase()).filter(Boolean))];
+        const users = await User.find({ email: { $in: approverEmails } }).select('email name').lean();
+        const names = Object.fromEntries(users.map(u => [u.email.toLowerCase(), u.name]));
+
+        // Completion = when the last department approved
+        const lastApproval = Math.max(...steps.map(s => (s.actionAt ? new Date(s.actionAt).getTime() : 0)));
+        const completedAt = request.completedAt || (lastApproval > 0 ? new Date(lastApproval) : new Date());
+        const year = new Date(request.submittedAt || request.createdAt || Date.now()).getFullYear();
+        const applicationNo = request.applicationNo || `ND-${year}-${String(request.rollNo || '').toUpperCase()}`;
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="No-Dues-${applicationNo}.pdf"`);
+        res.setHeader('Cache-Control', 'no-store');
+        writeCertificate({ request, steps, profile, names, completedAt, applicationNo }, res);
+    } catch (err) {
+        console.error('getCertificate error:', err);
+        if (!res.headersSent) res.status(500).json({ error: err.message });
+    }
+}
+
 module.exports = {
+    getCertificate,
     getMyLogProof,
     getProfile,
     updateProfile,

@@ -4,6 +4,55 @@ import api from "../../../api/client";
 import ConfirmModal from "../../Modal/ConfirmModal";
 import FileViewerModal from "../../Modal/FileViewerModal";
 
+// ── No Dues certificate (shown once every department has approved) ─────────────
+function CertificateCard() {
+  const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState("");
+
+  const download = async () => {
+    setDownloading(true);
+    setError("");
+    try {
+      const res = await api.get("/student/certificate", { responseType: "blob" });
+      const name = /filename="([^"]+)"/.exec(res.headers["content-disposition"] || "")?.[1] || "No-Dues-Certificate.pdf";
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      let msg = "Could not download the certificate. Please try again.";
+      try { msg = JSON.parse(await err.response.data.text()).error || msg; } catch { /* keep default */ }
+      setError(msg);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <div className="mt-6 flex flex-col gap-4 rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="text-base font-semibold text-emerald-200">🎓 All departments have cleared your No Dues</p>
+        <p className="mt-1 text-sm text-emerald-100/70">
+          Download your filled No Dues form with every department's clearance and the Registrar's approval.
+        </p>
+        {error && <p className="mt-2 text-sm text-rose-300">{error}</p>}
+      </div>
+      <button
+        type="button"
+        onClick={download}
+        disabled={downloading}
+        className="shrink-0 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+      >
+        {downloading ? "Preparing…" : "⬇ Download No Dues Certificate"}
+      </button>
+    </div>
+  );
+}
+
 // ── Validation Alert Popup ──────────────────────────────────────────────────────
 function ValidationAlertModal({ errors, onClose }) {
   if (!errors || errors.length === 0) return null;
@@ -501,6 +550,7 @@ export default function StudentProfile() {
               <p className="text-sm font-medium text-red-200">{errorMsg}</p>
             </div>
           )}
+          {currentApplication?.status === "approved" && <CertificateCard />}
           {!canEdit && (
             <div className="mt-6 rounded-xl border border-white/15 bg-white/5 p-4">
               <p className="text-sm font-medium text-white/80">🔒 {savedProfile?.lockReason}</p>

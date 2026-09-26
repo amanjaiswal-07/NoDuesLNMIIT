@@ -18,6 +18,7 @@ app.use(cors({
     'https://no-dues-gravity.vercel.app'
   ],
   credentials: true,
+  exposedHeaders: ['Content-Disposition'], // lets the browser read download file names
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
