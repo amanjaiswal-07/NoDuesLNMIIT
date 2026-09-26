@@ -131,9 +131,9 @@ function DocPreview({ label, fieldName, isPdf = false, stepId }) {
       <div className="p-3">
         {loading && <p className="py-3 text-xs text-white/40">Loading…</p>}
         {!loading && error && <p className="py-3 text-xs text-rose-400">{error}</p>}
-        {url && !isPdf && <img src={url} alt={label} className="max-h-64 w-full rounded-lg border border-white/10 bg-black object-contain" />}
+        {url && !isPdf && <img src={url} alt={label} className="max-h-96 w-full rounded-lg border border-white/10 bg-black object-contain" />}
         {url && isPdf && (
-          <iframe title={label} src={`${url}#toolbar=1&navpanes=0`} className="w-full rounded-lg border border-white/10 bg-white" style={{ height: "360px", minHeight: "300px" }} />
+          <iframe title={label} src={`${url}#toolbar=1&navpanes=0`} className="w-full rounded-lg border border-white/10 bg-white" style={{ height: "480px", minHeight: "320px" }} />
         )}
       </div>
     </div>
@@ -382,27 +382,38 @@ export default function ViewDetailsModal({ open, student, currentDepartment, onC
   const reapplyLogs = stepLogs.filter((l) => l.action === "reapply" || l.action === "student_replied");
   const deptSection = DEPT_SECTIONS[department];
 
-  return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3">
-      <button type="button" onClick={onClose} className="absolute inset-0 bg-black/75 backdrop-blur-[2px]" aria-label="Close modal backdrop" />
+  const initials = name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
+  const approvedCount = allSteps.filter((s) => s.status === "approved").length;
+  const progressPct = allSteps.length ? Math.round((approvedCount / allSteps.length) * 100) : 0;
 
-      <div className="relative flex max-h-[93vh] w-full max-w-2xl flex-col rounded-2xl border border-white/15 bg-neutral-900 text-white shadow-2xl">
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-2 sm:p-4">
+      <button type="button" onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-sm" aria-label="Close modal backdrop" />
+
+      <div className="relative flex h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/15 bg-neutral-900 text-white shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-base font-semibold">Student Details</h2>
-              <StatusPill status={currentStatus} />
+        <div className="flex items-center justify-between gap-4 border-b border-white/10 bg-gradient-to-r from-white/[0.06] to-transparent px-6 py-5">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-gradient-to-br from-blue-500/30 to-violet-500/20 text-lg font-bold">
+              {initials}
             </div>
-            <p className="mt-0.5 text-sm text-white/60">{name} ({roll})</p>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h2 className="truncate text-xl font-semibold">{name}</h2>
+                <StatusPill status={currentStatus} />
+              </div>
+              <p className="mt-1 truncate text-sm text-white/55">
+                {roll} · {email}{step?.unitLabel ? ` · ${step.unitLabel}` : ""}
+              </p>
+            </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 hover:bg-white/10" aria-label="Close">✕</button>
+          <button type="button" onClick={onClose} className="shrink-0 rounded-xl p-2 text-lg text-white/60 hover:bg-white/10 hover:text-white" aria-label="Close">✕</button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+        <div className="flex-1 overflow-y-auto px-6 py-6">
           {loading && (
-            <div className="flex items-center justify-center py-16">
+            <div className="flex h-full items-center justify-center py-16">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-white/60" />
               <p className="ml-3 text-sm text-white/50">Loading details…</p>
             </div>
@@ -415,91 +426,101 @@ export default function ViewDetailsModal({ open, student, currentDepartment, onC
           )}
 
           {!loading && !fetchError && data && (
-            <>
-              {/* 1. Basic Info */}
-              <div>
-                <SectionHeading>Basic Information</SectionHeading>
-                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-                  <InfoRow label="Name" value={name} />
-                  <InfoRow label="Roll Number" value={roll} />
-                  <InfoRow label="Email" value={email} />
-                  <InfoRow label="Phone" value={profile?.phone} />
-                  <InfoRow label="Branch" value={profile?.branch || requestInfo?.branch} />
-                  <InfoRow label="Graduation" value={profile?.graduation} />
-                </div>
-              </div>
-
-              {/* 2. Status */}
-              <div>
-                <SectionHeading>Application Status</SectionHeading>
-                <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-white/70">Overall Application</p>
-                    <span className={`text-sm font-semibold ${appStatus?.className || "text-white/60"}`}>{appStatus?.label || requestInfo?.status || "—"}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-white/70">This Department</p>
-                    <StatusPill status={currentStatus} />
-                  </div>
-                  {requestInfo?.submittedAt && <p className="text-xs text-white/40">Applied on {fmt(requestInfo.submittedAt)}</p>}
-                  {step?.actionBy && <p className="text-xs text-white/40">Last action by {step.actionBy} on {fmt(step.actionAt)}</p>}
-                </div>
-              </div>
-
-              {/* 3. Timeline */}
-              <div>
-                <SectionHeading>Application Timeline</SectionHeading>
-                <Timeline logs={stepLogs} stepId={stepId} onOpenFile={setPreviewFile} />
-              </div>
-
-              {/* 4. History summary */}
-              {(holdLogs.length > 0 || reapplyLogs.length > 0) && (
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+              {/* Left column: who the student is and where the application stands */}
+              <div className="space-y-6 lg:col-span-2">
                 <div>
-                  <SectionHeading>Application History</SectionHeading>
+                  <SectionHeading>Basic Information</SectionHeading>
                   <div className="grid grid-cols-2 gap-2.5">
-                    <InfoRow label="Times Put On Hold" value={String(holdLogs.length)} />
-                    <InfoRow label="Times Student Reapplied" value={String(reapplyLogs.length)} />
+                    <InfoRow label="Name" value={name} />
+                    <InfoRow label="Roll Number" value={roll} />
+                    <div className="col-span-2"><InfoRow label="Email" value={email} /></div>
+                    <InfoRow label="Phone" value={profile?.phone} />
+                    <InfoRow label="Branch" value={profile?.branch || requestInfo?.branch} />
+                    <InfoRow label="Graduation" value={profile?.graduation} />
                   </div>
                 </div>
-              )}
 
-              {/* 5. Prerequisites */}
-              {prerequisites.length > 0 && (
                 <div>
-                  <SectionHeading>Prerequisite Approvals</SectionHeading>
-                  <div className="space-y-2">
-                    {prerequisites.map((s) => (
-                      <div key={s.unitCode} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-                        <p className="text-sm text-white/80">{s.unitLabel}</p>
-                        <StatusPill status={s.status} />
+                  <SectionHeading>Application Status</SectionHeading>
+                  <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 px-4 py-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-white/70">Overall Application</p>
+                      <span className={`text-sm font-semibold ${appStatus?.className || "text-white/60"}`}>{appStatus?.label || requestInfo?.status || "—"}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-white/70">This Department</p>
+                      <StatusPill status={currentStatus} />
+                    </div>
+                    {allSteps.length > 0 && (
+                      <div>
+                        <div className="mb-1.5 flex justify-between text-xs text-white/50">
+                          <span>Departments cleared</span>
+                          <span>{approvedCount} / {allSteps.length}</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                          <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-300" style={{ width: `${progressPct}%` }} />
+                        </div>
                       </div>
-                    ))}
+                    )}
+                    {requestInfo?.submittedAt && <p className="text-xs text-white/40">Applied on {fmt(requestInfo.submittedAt)}</p>}
+                    {step?.actionBy && <p className="text-xs text-white/40">Last action by {step.actionBy} on {fmt(step.actionAt)}</p>}
                   </div>
                 </div>
-              )}
 
-              {/* 6. Department-specific details */}
-              {deptSection && profile && (
-                <div>
-                  <SectionHeading>{deptSection.title}</SectionHeading>
-                  <deptSection.Component profile={profile} stepId={stepId} />
-                </div>
-              )}
+                {prerequisites.length > 0 && (
+                  <div>
+                    <SectionHeading>Prerequisite Approvals</SectionHeading>
+                    <div className="space-y-2">
+                      {prerequisites.map((s) => (
+                        <div key={s.unitCode} className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5">
+                          <p className="text-sm text-white/80">{s.unitLabel}</p>
+                          <StatusPill status={s.status} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-              {/* 7. ID Card (all departments) */}
-              <div>
-                <SectionHeading>Documents</SectionHeading>
-                {profile?.documents?.idCardFile
-                  ? <DocPreview label="Student ID Card" fieldName="idCardFile" stepId={stepId} />
-                  : <p className="text-sm text-white/40">ID Card not uploaded.</p>}
+                {(holdLogs.length > 0 || reapplyLogs.length > 0) && (
+                  <div>
+                    <SectionHeading>Application History</SectionHeading>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <InfoRow label="Times Put On Hold" value={String(holdLogs.length)} />
+                      <InfoRow label="Times Student Reapplied" value={String(reapplyLogs.length)} />
+                    </div>
+                  </div>
+                )}
               </div>
-            </>
+
+              {/* Right column: timeline, department-specific details, documents */}
+              <div className="space-y-6 lg:col-span-3">
+                <div>
+                  <SectionHeading>Application Timeline</SectionHeading>
+                  <Timeline logs={stepLogs} stepId={stepId} onOpenFile={setPreviewFile} />
+                </div>
+
+                {deptSection && profile && (
+                  <div>
+                    <SectionHeading>{deptSection.title}</SectionHeading>
+                    <deptSection.Component profile={profile} stepId={stepId} />
+                  </div>
+                )}
+
+                <div>
+                  <SectionHeading>Documents</SectionHeading>
+                  {profile?.documents?.idCardFile
+                    ? <DocPreview label="Student ID Card" fieldName="idCardFile" stepId={stepId} />
+                    : <p className="text-sm text-white/40">ID Card not uploaded.</p>}
+                </div>
+              </div>
+            </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end border-t border-white/10 px-5 py-3">
-          <button type="button" onClick={onClose} className="rounded-xl border border-white/15 px-4 py-2 text-sm font-medium text-white/90 hover:bg-white/10">
+        <div className="flex justify-end border-t border-white/10 px-6 py-3.5">
+          <button type="button" onClick={onClose} className="rounded-xl border border-white/15 px-5 py-2 text-sm font-medium text-white/90 hover:bg-white/10">
             Close
           </button>
         </div>
