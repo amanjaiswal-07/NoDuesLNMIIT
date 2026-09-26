@@ -139,8 +139,8 @@ export default function StudentHistory() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-white/10 p-8 text-white shadow-lg backdrop-blur">
-        <h1 className="text-3xl font-semibold">Application History</h1>
+      <div className="rounded-2xl bg-white/10 p-5 sm:p-8 text-white shadow-lg backdrop-blur">
+        <h1 className="text-2xl font-semibold sm:text-3xl">Application History</h1>
         <p className="mt-2 text-white/70">
           View all your previous No Dues applications and their status.
         </p>

@@ -253,6 +253,8 @@ import {
   AdjustmentsHorizontalIcon,
   ArrowUpRightIcon,
 } from "@heroicons/react/24/outline";
+import StudentRow from "./StudentRow";
+import { rowButton } from "./rowButton";
 
 export default function PendingRequests({
   title = "Pending Requests",
@@ -435,66 +437,33 @@ function Row({
       : AdjustmentsHorizontalIcon;
 
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-white/15 bg-white/5 px-5 py-4 text-white shadow-sm overflow-x-auto">
-      <div className="w-6 shrink-0">
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={() => onToggleSelect?.(s.id)}
-          className="h-4 w-4 rounded border-white/20 bg-transparent"
-        />
-      </div>
-
-      <div className="w-10 text-white/80">{idx + 1}.</div>
-
-      <div className="w-[220px] truncate font-medium">{s.name}</div>
-      <div className="w-[130px] text-white/80">{s.roll}</div>
-      <div className="w-[260px] truncate text-white/70">{s.email}</div>
-
-      <div className="ml-auto flex shrink-0 items-center gap-3">
-        {showApprove && (
-          <button
-            type="button"
-            onClick={() => onApprove?.(s)}
-            className="inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 px-4 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-500/10"
-          >
-            <ApproveIcon className="h-5 w-5" />
-            {approveLabel}
-          </button>
-        )}
-
-        {extraActionLabel && (
-          <button
-            type="button"
-            onClick={() => onExtraAction?.(s)}
-            className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-2 text-sm font-medium text-white/90 hover:bg-white/10"
-          >
-            <ExtraIcon className="h-5 w-5" />
-            {extraActionLabel}
-          </button>
-        )}
-
-        {showReject && (
-          <button
-            type="button"
-            onClick={() => onReject?.(s)}
-            className="inline-flex items-center gap-2 rounded-xl border border-rose-400/40 px-4 py-2 text-sm font-medium text-rose-300 hover:bg-rose-500/10"
-          >
-            <XCircleIcon className="h-5 w-5" />
-            {rejectLabel}
-          </button>
-        )}
-
-        <button
-          type="button"
-          onClick={() => onView?.(s)}
-          className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-2 text-sm font-medium text-white/90 hover:bg-white/10"
-        >
-          <EyeIcon className="h-5 w-5" />
-          View details
+    <StudentRow idx={idx} s={s} isSelected={isSelected} onToggleSelect={onToggleSelect} wide>
+      {showApprove && (
+        <button type="button" onClick={() => onApprove?.(s)} className={rowButton("green")}>
+          <ApproveIcon className="h-5 w-5" />
+          {approveLabel}
         </button>
-      </div>
-    </div>
+      )}
+
+      {extraActionLabel && (
+        <button type="button" onClick={() => onExtraAction?.(s)} className={rowButton("neutral")}>
+          <ExtraIcon className="h-5 w-5" />
+          {extraActionLabel}
+        </button>
+      )}
+
+      {showReject && (
+        <button type="button" onClick={() => onReject?.(s)} className={rowButton("red")}>
+          <XCircleIcon className="h-5 w-5" />
+          {rejectLabel}
+        </button>
+      )}
+
+      <button type="button" onClick={() => onView?.(s)} className={rowButton("neutral")}>
+        <EyeIcon className="h-5 w-5" />
+        View details
+      </button>
+    </StudentRow>
   );
 }
 

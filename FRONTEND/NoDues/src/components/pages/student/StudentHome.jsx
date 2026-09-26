@@ -15,8 +15,8 @@ export default function StudentHome() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-white/10 p-8 text-white shadow-lg backdrop-blur">
-        <h1 className="text-3xl font-semibold">Student Dashboard</h1>
+      <div className="rounded-2xl bg-white/10 p-5 sm:p-8 text-white shadow-lg backdrop-blur">
+        <h1 className="text-2xl font-semibold sm:text-3xl">Student Dashboard</h1>
         <p className="mt-2 text-white/70">
           Welcome{email ? `, ${email}` : ""}. Manage your profile and track No
           Dues progress.
@@ -91,4 +91,4 @@ export default function StudentHome() {
       <HowToApply />
     </div>
   );
-}
+}

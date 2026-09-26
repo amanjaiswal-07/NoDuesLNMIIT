@@ -39,13 +39,18 @@ const Login = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Google's button only accepts a pixel width (max 400), so match it to the card's width
+  // Google's button only accepts a pixel width (max 400), so match it to the card's width.
+  // It is rendered once the width is known, and re-created only when the width really changes,
+  // so Google's script is initialised once per page instead of on every tiny resize.
   const buttonBoxRef = useRef(null);
-  const [buttonWidth, setButtonWidth] = useState(360);
+  const [buttonWidth, setButtonWidth] = useState(null);
   useLayoutEffect(() => {
     const box = buttonBoxRef.current;
     if (!box) return;
-    const update = () => setButtonWidth(Math.min(400, Math.max(200, Math.floor(box.clientWidth))));
+    const update = () => {
+      const next = Math.min(400, Math.max(200, Math.floor(box.clientWidth)));
+      setButtonWidth((prev) => (prev && Math.abs(prev - next) < 24 ? prev : next));
+    };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(box);
@@ -140,12 +145,11 @@ const Login = () => {
           <div ref={buttonBoxRef} className="flex min-h-[44px] w-full items-center justify-center">
             {isLoading ? (
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-            ) : (
+            ) : buttonWidth && (
               <GoogleLogin
                 key={buttonWidth}
                 onSuccess={handleGoogleSuccess}
                 onError={handleGoogleError}
-                useOneTap
                 theme="filled_blue"
                 size="large"
                 shape="pill"

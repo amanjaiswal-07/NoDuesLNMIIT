@@ -21,8 +21,8 @@
 //   };
 
 //   return (
-//     <div className="rounded-2xl bg-white/10 p-10 text-white shadow-lg backdrop-blur">
-//       <h1 className="text-3xl font-semibold">Warden In Charge Dashboard</h1>
+//     <div className="rounded-2xl bg-white/10 p-5 sm:p-10 text-white shadow-lg backdrop-blur">
+//       <h1 className="text-2xl font-semibold sm:text-3xl">Warden In Charge Dashboard</h1>
 //       <p className="mt-2 text-white/70">
 //         Select a hostel to view and manage clearance requests.
 //       </p>
@@ -94,8 +94,8 @@ export default function WardenHome() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-white/10 p-10 text-white shadow-lg backdrop-blur">
-        <h1 className="text-3xl font-semibold">Warden In Charge Dashboard</h1>
+      <div className="rounded-2xl bg-white/10 p-5 sm:p-10 text-white shadow-lg backdrop-blur">
+        <h1 className="text-2xl font-semibold sm:text-3xl">Warden In Charge Dashboard</h1>
         <p className="mt-2 text-white/70">
           Select a hostel to view and manage clearance requests.
         </p>

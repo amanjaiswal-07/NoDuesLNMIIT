@@ -71,7 +71,7 @@ export default function DepartmentLayout({ role, unitCodes, title, basePath, hea
             />
 
             {error && (
-                <div className="mx-auto max-w-7xl px-6 pt-4">
+                <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6">
                     <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                         {error} —{" "}
                         <button onClick={refresh} className="underline hover:no-underline">Retry</button>
@@ -79,7 +79,7 @@ export default function DepartmentLayout({ role, unitCodes, title, basePath, hea
                 </div>
             )}
 
-            <main className="mx-auto max-w-7xl px-6 py-8">
+            <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
                 {children ? children(contextData) : <Outlet context={contextData} />}
             </main>
         </div>

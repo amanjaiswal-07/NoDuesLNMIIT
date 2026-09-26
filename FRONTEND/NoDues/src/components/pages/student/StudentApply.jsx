@@ -58,8 +58,8 @@ export default function StudentApply() {
   return (
     <>
       <div className="space-y-6">
-        <div className="rounded-2xl bg-white/10 p-8 text-white shadow-lg backdrop-blur">
-          <h1 className="text-3xl font-semibold">Apply for No Dues</h1>
+        <div className="rounded-2xl bg-white/10 p-5 sm:p-8 text-white shadow-lg backdrop-blur">
+          <h1 className="text-2xl font-semibold sm:text-3xl">Apply for No Dues</h1>
           <p className="mt-2 text-white/70">
             Submit your No Dues application after completing your profile.
           </p>

@@ -98,7 +98,7 @@ export default function StudentLayout() {
   };
 
   const navClass = ({ isActive }) =>
-    `flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${isActive
+    `flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition sm:px-4 ${isActive
       ? "bg-blue-600 text-white"
       : "text-white/80 hover:bg-white/10 hover:text-white"
     }`;
@@ -114,18 +114,28 @@ export default function StudentLayout() {
   return (
     <div className="min-h-screen bg-neutral-900">
       <header className="sticky top-0 z-50 w-full bg-black/80 backdrop-blur border-b border-white/10">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link to="/student" className="flex items-center gap-3 group">
-            <div className="rounded-lg bg-white p-2 shadow-[0_0_15px_rgba(255,255,255,0.1)] group-hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-shadow">
-              <img src={logo} alt="LNMIIT" className="h-8 w-auto" />
+        {/* Phones: brand + Logout on top, tabs underneath (scroll sideways). Desktop: one row. */}
+        <nav className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-3 sm:px-6 lg:flex-nowrap lg:py-4">
+          <Link to="/student" className="flex min-w-0 items-center gap-3 group">
+            <div className="shrink-0 rounded-lg bg-white p-1.5 shadow-[0_0_15px_rgba(255,255,255,0.1)] group-hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-shadow sm:p-2">
+              <img src={logo} alt="LNMIIT" className="h-7 w-auto sm:h-8" />
             </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-bold text-white tracking-wide">LNMIIT No Dues</span>
-              <span className="text-xs font-medium text-white/50">{email}</span>
+            <div className="flex min-w-0 flex-col">
+              <span className="truncate text-base font-bold text-white tracking-wide sm:text-lg">LNMIIT No Dues</span>
+              <span className="truncate text-xs font-medium text-white/50">{email}</span>
             </div>
           </Link>
 
-          <div className="flex items-center gap-4">
+          <button
+            onClick={handleLogout}
+            aria-label="Logout"
+            className="flex shrink-0 items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors sm:px-4 lg:order-last"
+          >
+            <ArrowRightOnRectangleIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
+
+          <div className="no-scrollbar -mx-1 flex w-full items-center gap-1 overflow-x-auto px-1 lg:mx-0 lg:w-auto lg:gap-4 lg:overflow-visible lg:px-0">
             <NavLink to="/student" end className={navClass}>
               <HomeIcon className="h-5 w-5" />
               Dashboard
@@ -146,7 +156,7 @@ export default function StudentLayout() {
               <button
                 type="button"
                 disabled
-                className="flex cursor-not-allowed items-center gap-2 rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-white/40"
+                className="flex shrink-0 cursor-not-allowed items-center gap-2 whitespace-nowrap rounded-lg bg-white/5 px-3 py-2 text-sm font-medium text-white/40 sm:px-4"
                 title={currentApplication ? "Application already in progress" : "Complete profile first"}
               >
                 <DocumentPlusIcon className="h-5 w-5" />
@@ -165,17 +175,10 @@ export default function StudentLayout() {
             </NavLink>
           </div>
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
-          >
-            <ArrowRightOnRectangleIcon className="h-4 w-4" />
-            Logout
-          </button>
         </nav>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 py-10">
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
         <Outlet
           context={{
             user,

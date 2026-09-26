@@ -77,6 +77,8 @@
 // }
 import { useMemo, useState } from "react";
 import { EyeIcon, ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
+import StudentRow from "./StudentRow";
+import { rowButton } from "./rowButton";
 
 export default function RejectedRequests({
   title = "Requests On Hold",
@@ -223,44 +225,19 @@ function Row({
   onView,
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-white/15 bg-white/5 px-5 py-4 text-white shadow-sm">
-      <div className="w-6 shrink-0">
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={() => onToggleSelect?.(s.id)}
-          className="h-4 w-4 rounded border-white/20 bg-transparent"
-        />
-      </div>
+    <StudentRow idx={idx} s={s} isSelected={isSelected} onToggleSelect={onToggleSelect}>
+      <button type="button" onClick={() => onView?.(s)} className={rowButton("neutral")}>
+        <EyeIcon className="h-5 w-5" />
+        View details
+      </button>
 
-      <div className="w-10 text-white/80">{idx + 1}.</div>
-
-      <div className="min-w-[200px] flex-1 font-medium">{s.name}</div>
-      <div className="min-w-[120px] text-white/80">{s.roll}</div>
-      <div className="min-w-[220px] flex-1 text-white/70">{s.email}</div>
-
-      <div className="ml-auto flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => onView?.(s)}
-          className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-2 text-sm font-medium text-white/90 hover:bg-white/10"
-        >
-          <EyeIcon className="h-5 w-5" />
-          View details
+      {onMoveToApproved && (
+        <button type="button" onClick={() => onMoveToApproved?.(s)} className={rowButton("sky")}>
+          <ArrowUturnLeftIcon className="h-5 w-5" />
+          Move to Approved
         </button>
-
-        {onMoveToApproved && (
-          <button
-            type="button"
-            onClick={() => onMoveToApproved?.(s)}
-            className="inline-flex items-center gap-2 rounded-xl border border-sky-400/40 px-4 py-2 text-sm font-medium text-sky-300 hover:bg-sky-500/10"
-          >
-            <ArrowUturnLeftIcon className="h-5 w-5" />
-            Move to Approved
-          </button>
-        )}
-      </div>
-    </div>
+      )}
+    </StudentRow>
   );
 }
 

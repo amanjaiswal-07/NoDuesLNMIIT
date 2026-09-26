@@ -535,8 +535,8 @@ export default function StudentTrack() {
   if (!currentApplication) {
     return (
       <div className="space-y-6">
-        <div className="rounded-2xl bg-white/10 p-8 text-white shadow-lg backdrop-blur">
-          <h1 className="text-3xl font-semibold">Track Application</h1>
+        <div className="rounded-2xl bg-white/10 p-5 sm:p-8 text-white shadow-lg backdrop-blur">
+          <h1 className="text-2xl font-semibold sm:text-3xl">Track Application</h1>
           <p className="mt-2 text-white/70">Monitor your No Dues request across all departments.</p>
         </div>
         <div className="rounded-2xl border border-white/15 bg-white/5 p-10 text-center">
@@ -588,10 +588,10 @@ export default function StudentTrack() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="rounded-2xl bg-white/10 p-8 text-white shadow-lg backdrop-blur">
+      <div className="rounded-2xl bg-white/10 p-5 sm:p-8 text-white shadow-lg backdrop-blur">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold">Track Application</h1>
+            <h1 className="text-2xl font-semibold sm:text-3xl">Track Application</h1>
             <p className="mt-2 text-white/70">Monitor your No Dues request across all departments.</p>
           </div>
           <button
@@ -713,8 +713,8 @@ export default function StudentTrack() {
       </div>
 
       {/* Step Timeline */}
-      <div className="rounded-2xl border border-white/15 bg-white/5 p-6">
-        <div className="mb-6 flex items-center justify-between">
+      <div className="rounded-2xl border border-white/15 bg-white/5 p-4 sm:p-6">
+        <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold text-white">Department Clearance Timeline</h2>
           <p className="text-xs text-white/40">Click "Timeline" on each step to see full event history</p>
         </div>

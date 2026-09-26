@@ -62,7 +62,7 @@ export default function AdminHome() {
   return (
     <div className="space-y-6">
       <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl">
-        <h2 className="text-3xl font-semibold text-white">Welcome to Admin Control</h2>
+        <h2 className="text-2xl font-semibold sm:text-3xl text-white">Welcome to Admin Control</h2>
         <p className="mt-2 max-w-3xl text-sm text-white/65">
           This section is used to control department login access, eligible
           students, and overall No Dues operations.

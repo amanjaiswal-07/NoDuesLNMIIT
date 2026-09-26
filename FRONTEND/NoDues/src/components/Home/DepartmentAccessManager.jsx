@@ -188,7 +188,7 @@ export default function DepartmentAccessManager({ currentRoute }) {
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm text-white/80">
+          <table className="w-full min-w-[560px] text-left text-sm text-white/80">
             <thead className="bg-white/5 text-xs uppercase tracking-wide text-white/50">
               <tr>
                 <th className="px-5 py-4">Name</th>

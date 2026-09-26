@@ -29,8 +29,8 @@
 //   };
 
 //   return (
-//     <div className="rounded-2xl bg-white/10 p-10 text-white shadow-lg backdrop-blur">
-//       <h1 className="text-3xl font-semibold">
+//     <div className="rounded-2xl bg-white/10 p-5 sm:p-10 text-white shadow-lg backdrop-blur">
+//       <h1 className="text-2xl font-semibold sm:text-3xl">
 //         {prettyDepartmentName(department)} Dashboard
 //       </h1>
 //       <p className="mt-2 text-white/70">
@@ -117,8 +117,8 @@ export default function LabsHome() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-white/10 p-10 text-white shadow-lg backdrop-blur">
-        <h1 className="text-3xl font-semibold">
+      <div className="rounded-2xl bg-white/10 p-5 sm:p-10 text-white shadow-lg backdrop-blur">
+        <h1 className="text-2xl font-semibold sm:text-3xl">
           {prettyDepartmentName(department)} Dashboard
         </h1>
         <p className="mt-2 text-white/70">

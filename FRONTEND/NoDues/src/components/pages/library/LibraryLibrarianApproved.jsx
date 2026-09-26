@@ -3,6 +3,8 @@ import { useState } from "react";
 import { EyeIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import RejectModal from "../../Modal/RejectModal";
 import ViewDetailsModal from "../../Modal/ViewDetailsModal";
+import StudentRow from "../../Request/StudentRow";
+import { rowButton } from "../../Request/rowButton";
 
 export default function LibraryLibrarianApproved() {
   const { librarianApproved, librarianMoveApprovedToRejected } = useOutletContext();
@@ -38,41 +40,31 @@ export default function LibraryLibrarianApproved() {
           </div>
         ) : (
           librarianApproved.map((s, idx) => (
-            <div
-              key={s.id ?? s.roll}
-              className="flex flex-nowrap items-center gap-4 rounded-2xl border border-white/15 bg-white/5 px-5 py-4 text-white shadow-sm"
-            >
-              <div className="w-10 shrink-0 text-white/80">{idx + 1}.</div>
-              <div className="min-w-[220px] flex-1 font-medium">{s.name}</div>
-              <div className="min-w-[140px] shrink-0 text-white/80">{s.roll}</div>
-              <div className="min-w-[260px] flex-1 text-white/70">{s.email}</div>
+            <StudentRow key={s.id ?? s.roll} idx={idx} s={s}>
+              <button
+                type="button"
+                onClick={() => {
+                  setRejectSelected(s);
+                  setRejectOpen(true);
+                }}
+                className={rowButton("red")}
+              >
+                <XCircleIcon className="h-5 w-5" />
+                Move to Rejected
+              </button>
 
-              <div className="ml-auto flex shrink-0 items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRejectSelected(s);
-                    setRejectOpen(true);
-                  }}
-                  className="inline-flex items-center gap-2 rounded-xl border border-rose-400/40 px-4 py-2 text-sm font-medium text-rose-300 hover:bg-rose-500/10"
-                >
-                  <XCircleIcon className="h-5 w-5" />
-                  Move to Rejected
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setViewStudent(s);
-                    setViewOpen(true);
-                  }}
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-2 text-sm font-medium text-white/90 hover:bg-white/10"
-                >
-                  <EyeIcon className="h-5 w-5" />
-                  View details
-                </button>
-              </div>
-            </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setViewStudent(s);
+                  setViewOpen(true);
+                }}
+                className={rowButton("neutral")}
+              >
+                <EyeIcon className="h-5 w-5" />
+                View details
+              </button>
+            </StudentRow>
           ))
         )}
       </div>

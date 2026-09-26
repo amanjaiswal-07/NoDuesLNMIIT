@@ -2,6 +2,8 @@ import { useOutletContext } from "react-router-dom";
 import { useState } from "react";
 import { EyeIcon } from "@heroicons/react/24/outline";
 import ViewDetailsModal from "../../Modal/ViewDetailsModal";
+import StudentRow from "../../Request/StudentRow";
+import { rowButton } from "../../Request/rowButton";
 
 export default function LibraryStaffSent() {
   const { staffSent } = useOutletContext();
@@ -41,39 +43,29 @@ export default function LibraryStaffSent() {
           </div>
         ) : (
           staffSent.map((s, idx) => (
-            <div
-              key={s.id ?? s.roll}
-              className="flex flex-nowrap items-center gap-4 rounded-2xl border border-white/15 bg-white/5 px-5 py-4 text-white shadow-sm"
-            >
-              <div className="w-10 shrink-0 text-white/80">{idx + 1}.</div>
-              <div className="min-w-[220px] flex-1 font-medium">{s.name}</div>
-              <div className="min-w-[140px] shrink-0 text-white/80">{s.roll}</div>
-              <div className="min-w-[260px] flex-1 text-white/70">{s.email}</div>
+            <StudentRow key={s.id ?? s.roll} idx={idx} s={s}>
+              {/* Status badge */}
+              <span
+                title={s.librarianReason || undefined}
+                className={`whitespace-nowrap rounded-xl border px-3 py-2 text-xs font-semibold ${badgeClass(
+                  getStatus(s)
+                )}`}
+              >
+                {getStatus(s)}
+              </span>
 
-              <div className="ml-auto flex shrink-0 items-center gap-3">
-                {/* Status badge */}
-                <span
-                  title={s.librarianReason || undefined}
-                  className={`rounded-xl border px-3 py-2 text-xs font-semibold ${badgeClass(
-                    getStatus(s)
-                  )}`}
-                >
-                  {getStatus(s)}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setViewStudent(s);
-                    setViewOpen(true);
-                  }}
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-2 text-sm font-medium text-white/90 hover:bg-white/10"
-                >
-                  <EyeIcon className="h-5 w-5" />
-                  View details
-                </button>
-              </div>
-            </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setViewStudent(s);
+                  setViewOpen(true);
+                }}
+                className={rowButton("neutral")}
+              >
+                <EyeIcon className="h-5 w-5" />
+                View details
+              </button>
+            </StudentRow>
           ))
         )}
       </div>

@@ -513,10 +513,10 @@ export default function StudentProfile() {
       <div className="space-y-6">
 
         {/* ── Header ── */}
-        <div className="rounded-2xl bg-white/10 p-8 text-white shadow-lg backdrop-blur">
+        <div className="rounded-2xl bg-white/10 p-5 sm:p-8 text-white shadow-lg backdrop-blur">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <h1 className="text-3xl font-semibold">Student Profile</h1>
+              <h1 className="text-2xl font-semibold sm:text-3xl">Student Profile</h1>
               <p className="mt-2 text-white/70">Complete your profile before applying for No Dues.</p>
             </div>
             <div className="flex items-center gap-3">

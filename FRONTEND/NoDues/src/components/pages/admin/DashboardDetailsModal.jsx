@@ -198,7 +198,7 @@ export default function DashboardDetailsModal({ type, onClose }) {
           ) : visible.length === 0 ? (
             <p className="py-8 text-center text-sm text-white/50">Nothing to show.</p>
           ) : (
-            <table className="min-w-full text-left text-sm text-white/80">
+            <table className="w-full min-w-[600px] text-left text-sm text-white/80">
               <thead className="sticky top-0 bg-neutral-900 text-xs uppercase tracking-wide text-white/50">
                 <tr>
                   {config.columns.map((c) => <th key={c.label} className="px-3 py-3">{c.label}</th>)}

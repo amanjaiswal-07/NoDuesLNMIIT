@@ -1,1 +1,8 @@
 @import "tailwindcss";
+/* Horizontal tab strips on phones: scrollable without a visible scrollbar */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

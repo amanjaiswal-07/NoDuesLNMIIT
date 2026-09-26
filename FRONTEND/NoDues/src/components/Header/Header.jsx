@@ -150,7 +150,7 @@ export default function Header({
   };
 
   const navClass = ({ isActive }) =>
-    `flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition
+    `flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition sm:px-4
      ${isActive
       ? "bg-blue-600 text-white"
       : "text-white/80 hover:bg-white/10 hover:text-white"
@@ -174,27 +174,38 @@ export default function Header({
 
   return (
     <header className="sticky top-0 z-50 w-full bg-black/80 backdrop-blur">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+      {/* Phones & laptops: brand + Logout on top, tabs underneath (scroll sideways). Wide screens: one row. */}
+      <nav className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-3 sm:px-6 xl:flex-nowrap xl:py-4">
         {/* Left */}
-        <Link to={basePath} className="flex items-center gap-3">
-          <div className="rounded-lg bg-white p-2">
-            <img src={logo} alt="LNMIIT" className="h-8 w-auto" />
+        <Link to={basePath} className="flex min-w-0 items-center gap-3">
+          <div className="shrink-0 rounded-lg bg-white p-1.5 sm:p-2">
+            <img src={logo} alt="LNMIIT" className="h-7 w-auto sm:h-8" />
           </div>
-          <span className="text-lg font-semibold text-white">
+          <span className="truncate text-base font-semibold text-white sm:text-lg">
             {title}
             {subTitle ? <span className="text-white/70"> - {subTitle}</span> : null}
           </span>
         </Link>
 
-        {/* Center */}
-        <div className="flex items-center gap-4">
+        {/* Right */}
+        <button
+          onClick={handleLogout}
+          aria-label="Logout"
+          className="flex shrink-0 items-center gap-2 rounded-lg border border-red-400/40 px-3 py-2 text-sm font-medium text-red-400 hover:bg-red-500/10 sm:px-4 xl:order-last"
+        >
+          <ArrowRightOnRectangleIcon className="h-5 w-5" />
+          <span className="hidden sm:inline">Logout</span>
+        </button>
+
+        {/* Tabs */}
+        <div className="no-scrollbar -mx-1 flex w-full items-center gap-1 overflow-x-auto px-1 pt-2 xl:mx-0 xl:w-auto xl:gap-4 xl:overflow-visible xl:px-0 xl:pt-0">
           <NavLink to={p.pending} className={navClass}>
             <span className="relative inline-flex items-center gap-2">
               <ClockIcon className="h-5 w-5" />
               {l.pending}
 
               {pendingCount > 0 && (
-                <span className="absolute -right-3 -top-3 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-600 px-1 text-[11px] font-semibold text-white">
+                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-600 px-1 text-[11px] font-semibold text-white ring-2 ring-black/60 xl:absolute xl:-right-3 xl:-top-3">
                   {pendingCount}
                 </span>
               )}
@@ -211,15 +222,6 @@ export default function Header({
             {l.rejected}
           </NavLink>
         </div>
-
-        {/* Right */}
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 rounded-lg border border-red-400/40 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/10"
-        >
-          <ArrowRightOnRectangleIcon className="h-5 w-5" />
-          Logout
-        </button>
       </nav>
     </header>
   );
