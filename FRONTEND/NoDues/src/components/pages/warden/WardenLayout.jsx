@@ -9,7 +9,13 @@ export default function WardenLayout() {
   const [selectedHostel, setSelectedHostel] = useState("");
 
   return (
-    <DepartmentLayout role="warden" unitCodes={["warden"]} title="Warden In Charge">
+    <DepartmentLayout
+      role="warden"
+      unitCodes={["warden"]}
+      title="Warden In Charge"
+      // Header badge shows the selected hostel's pending count only (none until a hostel is picked)
+      pendingCountFilter={(req) => Boolean(selectedHostel) && req.hostel === selectedHostel}
+    >
       {(contextData) => {
         // Filter data by selected hostel, if any
         const filteredPending = selectedHostel
@@ -35,6 +41,11 @@ export default function WardenLayout() {
 
               // Provide the custom hostel context that child pages need
               HOSTELS,
+              // Pending count per hostel, for the hostel dropdown
+              pendingByHostel: contextData.pending.reduce((acc, r) => {
+                acc[r.hostel] = (acc[r.hostel] || 0) + 1;
+                return acc;
+              }, {}),
               selectedHostel,
               setSelectedHostel,
               hostelSelected: Boolean(selectedHostel),

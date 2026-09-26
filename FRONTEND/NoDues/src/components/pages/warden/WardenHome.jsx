@@ -84,6 +84,7 @@ export default function WardenHome() {
     setSelectedHostel,
     hostelSelected,
     pending,
+    pendingByHostel = {},
   } = useOutletContext();
 
   const handleChange = (e) => {
@@ -109,7 +110,7 @@ export default function WardenHome() {
             <option value="">-- Select Hostel --</option>
             {HOSTELS.map((h) => (
               <option key={h} value={h}>
-                {h}
+                {h}{pendingByHostel[h] ? ` — ${pendingByHostel[h]} pending` : ""}
               </option>
             ))}
           </select>
