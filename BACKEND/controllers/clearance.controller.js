@@ -326,9 +326,16 @@ async function getStepFull(req, res) {
             ...docFlags,
         } : null;
 
+        // All action logs for this specific step — for On Hold history + Reapply history
+        const StepActionLog = require('../models/StepActionLog');
+        const stepLogs = await StepActionLog.find({ stepId: step._id })
+            .sort({ timestamp: 1 })
+            .lean();
+
         res.json({
             step,
             allSteps,
+            stepLogs,
             profile: safeProfile,
             requestInfo: {
                 _id: request._id,
@@ -339,6 +346,8 @@ async function getStepFull(req, res) {
                 hostel: request.hostel,
                 phone: request.phone,
                 placementStatus: request.placementStatus,
+                // Latest reapply data — visible to ALL departments (not just the one that put on hold)
+                reapplyData: request.reapplyData || null,
             },
         });
     } catch (err) {

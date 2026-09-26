@@ -21,8 +21,10 @@ const stepActionLogSchema = new mongoose.Schema({
             'unlocked',         // dependency engine unlocked this step
             'approved',         // staff approved
             'rejected',         // staff rejected
-            'student_replied',  // student replied with comment/proof after rejection
-            'reopened',         // step moved back to pending (system, after student reply)
+            'student_replied',  // student replied with comment/proof after rejection (reply flow)
+            'reapply',          // student submitted global reapply (with optional comment/proof)
+            'reopened',         // step moved back to pending (system, after student reply / reapply)
+            'relocked',         // step re-locked by dependency engine
         ],
         required: true,
     },

@@ -1,6 +1,124 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useOutletContext } from "react-router-dom";
 import api from "../../../api/client";
+
+// ── Reapply Modal ─────────────────────────────────────────────────────────────
+
+function ReapplyModal({ onSubmit, onCancel, submitting }) {
+  const [comment, setComment] = useState("");
+  const [file, setFile] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const ACCEPTED = ".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg";
+  const MAX_MB = 10;
+
+  const handleFile = (e) => {
+    const picked = e.target.files?.[0];
+    if (!picked) return;
+    if (picked.size > MAX_MB * 1024 * 1024) {
+      alert(`File is too large. Maximum allowed size is ${MAX_MB} MB.`);
+      e.target.value = "";
+      return;
+    }
+    setFile(picked);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <button
+        type="button"
+        onClick={onCancel}
+        className="absolute inset-0 bg-black/70 backdrop-blur-[2px]"
+        aria-label="Close modal"
+      />
+      {/* Panel */}
+      <div className="relative w-full max-w-lg rounded-2xl border border-white/15 bg-neutral-900 text-white shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <div>
+            <h2 className="text-base font-semibold">Reapply for Clearance</h2>
+            <p className="mt-0.5 text-xs text-white/50">Provide context to help the department review your request faster.</p>
+          </div>
+          <button type="button" onClick={onCancel} className="rounded-lg p-1.5 hover:bg-white/10">
+            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="space-y-5 px-5 py-5">
+          {/* Info banner */}
+          <div className="rounded-xl border border-blue-400/30 bg-blue-500/10 p-3">
+            <p className="text-xs text-blue-200">
+              Adding a comment or uploading proof is <strong>optional but recommended</strong>. It helps departments understand the changes you've made.
+            </p>
+          </div>
+
+          {/* Comment */}
+          <div>
+            <label className="block text-sm font-medium text-white/80">
+              Add Comment <span className="text-white/40 font-normal">(Optional but recommended)</span>
+            </label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Explain what changes you have made or what issue was resolved…"
+              rows={4}
+              className="mt-2 w-full rounded-xl border border-white/15 bg-neutral-950 px-4 py-3 text-sm text-white outline-none focus:border-blue-500 resize-none"
+            />
+          </div>
+
+          {/* File upload */}
+          <div>
+            <label className="block text-sm font-medium text-white/80">
+              Upload Supporting Document <span className="text-white/40 font-normal">(Optional)</span>
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ACCEPTED}
+              onChange={handleFile}
+              className="mt-2 block w-full rounded-xl border border-white/15 bg-neutral-950 px-4 py-3 text-sm text-white file:mr-4 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700"
+            />
+            <p className="mt-1.5 text-xs text-white/40">PDF / PNG / JPG — max 10 MB</p>
+            {file && (
+              <div className="mt-2 flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                <span className="text-xs text-emerald-300">✓</span>
+                <p className="text-xs text-white/70 truncate">{file.name}</p>
+                <p className="ml-auto shrink-0 text-xs text-white/40">{(file.size / 1024).toFixed(0)} KB</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 border-t border-white/10 px-5 py-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={submitting}
+            className="rounded-xl border border-white/15 px-4 py-2 text-sm font-medium text-white/80 hover:bg-white/10 disabled:opacity-40"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() => onSubmit({ comment, file })}
+            className={`rounded-xl px-5 py-2 text-sm font-semibold transition ${submitting
+                ? "cursor-not-allowed bg-red-600/30 text-red-300/50"
+                : "bg-red-600/80 text-white hover:bg-red-600"
+              }`}
+          >
+            {submitting ? "Submitting…" : "Submit Reapply"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Status helpers ────────────────────────────────────────────────────────────
 
@@ -37,10 +155,68 @@ const STATUS_CONFIG = {
 
 const cfg = (status) => STATUS_CONFIG[status] || STATUS_CONFIG.locked;
 
-// ── Step Card ─────────────────────────────────────────────────────────────────
+const fmt = (date) =>
+  date
+    ? new Date(date).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
+    : "";
 
-function StepCard({ step, isLast }) {
+// ── Single timeline event ─────────────────────────────────────────────────────
+
+function TimelineEvent({ log }) {
+  const { action, actorEmail, timestamp, note, proofUrls } = log;
+
+  // Visual config per action type
+  const EVENT_CFG = {
+    approved:  { icon: "✓", bg: "bg-emerald-500/20 border-emerald-400/30", text: "text-emerald-200", label: "Approved" },
+    rejected:  { icon: "⊘", bg: "bg-red-500/20 border-red-400/30",     text: "text-red-200",     label: "Placed On Hold" },
+    reapply:   { icon: "↩", bg: "bg-blue-500/20 border-blue-400/30",   text: "text-blue-200",   label: "Reapplied" },
+    student_replied: { icon: "💬", bg: "bg-blue-500/15 border-blue-400/25", text: "text-blue-200", label: "Student Replied" },
+    reopened:  { icon: "⟳", bg: "bg-white/5 border-white/10",          text: "text-white/40",   label: "Reopened" },
+    relocked:  { icon: "🔒", bg: "bg-white/5 border-white/10",          text: "text-white/35",   label: "Re-locked" },
+    unlocked:  { icon: "🔓", bg: "bg-white/5 border-white/10",          text: "text-white/35",   label: "Unlocked" },
+    created:   { icon: "＋", bg: "bg-white/5 border-white/10",          text: "text-white/30",   label: "Created" },
+  };
+  const ec = EVENT_CFG[action] || { icon: "·", bg: "bg-white/5 border-white/10", text: "text-white/30", label: action };
+
+  // Skip pure noise events (system re-locks/unlocks/created by default — hidden unless needed)
+  const isSystemNoise = ["created", "unlocked", "relocked"].includes(action);
+
+  return (
+    <div className={`rounded-lg border px-3 py-2.5 ${ec.bg} ${isSystemNoise ? "opacity-50" : ""}`}>
+      <div className="flex items-start gap-2">
+        <span className="mt-0.5 shrink-0 text-xs">{ec.icon}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className={`text-xs font-semibold ${ec.text}`}>{ec.label}</span>
+            {actorEmail && actorEmail !== "system" && (
+              <span className="text-[10px] text-white/40 truncate">by {actorEmail}</span>
+            )}
+            {timestamp && (
+              <span className="text-[10px] text-white/30 ml-auto shrink-0">{fmt(timestamp)}</span>
+            )}
+          </div>
+          {note && (
+            <p className="mt-1 text-[11px] text-white/60 leading-relaxed break-words">{note}</p>
+          )}
+          {proofUrls && proofUrls.length > 0 && (
+            <p className="mt-1 text-[10px] text-blue-300/70">📎 Supporting document uploaded</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Step Card with Timeline ───────────────────────────────────────────────────
+
+function StepCard({ step, logs, isLast }) {
   const c = cfg(step.status);
+  const [showTimeline, setShowTimeline] = useState(false);
+
+  // Relevant events for this step — filter system noise for the toggle count
+  const stepLogs = logs.filter((l) => String(l.stepId) === String(step._id));
+  const significantLogs = stepLogs.filter((l) => !["created", "unlocked", "relocked"].includes(l.action));
+
   return (
     <div className="relative flex gap-4">
       <div className="flex w-8 flex-col items-center">
@@ -54,17 +230,29 @@ function StepCard({ step, isLast }) {
             {(step.status === "approved" || step.status === "rejected") && step.actionBy && (
               <p className="mt-1 text-xs text-white/50">
                 Processed by: <span className="font-medium text-white/70">{step.actionBy}</span>
-                {step.actionAt ? ` on ${new Date(step.actionAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}` : ""}
+                {step.actionAt ? ` on ${fmt(step.actionAt)}` : ""}
               </p>
             )}
           </div>
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${c.badge}`}>
-            {c.label}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${c.badge}`}>
+              {c.label}
+            </span>
+            {significantLogs.length > 0 && (
+              <button
+                onClick={() => setShowTimeline((p) => !p)}
+                className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] text-white/50 hover:bg-white/10 hover:text-white/80 transition"
+              >
+                {showTimeline ? "Hide" : `Timeline (${significantLogs.length})`}
+              </button>
+            )}
+          </div>
         </div>
+
         {step.status === "locked" && (
           <p className="mt-1.5 text-xs text-white/35">Awaiting prerequisite approvals</p>
         )}
+
         {step.status === "rejected" && (
           <div className="mt-3 rounded-lg border border-red-400/20 bg-red-500/10 p-3 space-y-1">
             {step.rejectionReason && (
@@ -80,17 +268,62 @@ function StepCard({ step, isLast }) {
             )}
           </div>
         )}
-        {step.studentReply && (
-          <p className="mt-1 text-xs text-blue-300/80 italic">Your reply: {step.studentReply}</p>
+
+        {/* Timeline */}
+        {showTimeline && stepLogs.length > 0 && (
+          <div className="mt-3 border-t border-white/10 pt-3 space-y-2">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30">Event History</p>
+            {stepLogs.map((log, i) => (
+              <TimelineEvent key={i} log={log} />
+            ))}
+          </div>
         )}
       </div>
     </div>
   );
 }
 
+// ── Lab Step Row (inside GroupCard) — needs own state so hooks rule is satisfied ──
+
+function LabStepRow({ step, logs }) {
+  const sc = cfg(step.status);
+  const stepLogs = logs.filter((l) => String(l.stepId) === String(step._id));
+  const [showTl, setShowTl] = useState(false);
+  const significantLogs = stepLogs.filter((l) => !["created", "unlocked", "relocked"].includes(l.action));
+  return (
+    <div key={step._id} className="flex flex-col gap-1 border-b border-white/5 pb-2 last:border-0 last:pb-0">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-white/70">{step.unitLabel}</p>
+        <div className="flex items-center gap-1.5">
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${sc.badge}`}>{sc.label}</span>
+          {significantLogs.length > 0 && (
+            <button
+              onClick={() => setShowTl((p) => !p)}
+              className="rounded-full border border-white/15 px-2 py-0.5 text-[9px] text-white/40 hover:bg-white/10 transition"
+            >
+              {showTl ? "Hide" : `▸ ${significantLogs.length}`}
+            </button>
+          )}
+        </div>
+      </div>
+      {(step.status === "approved" || step.status === "rejected") && step.actionBy && (
+        <p className="text-[10px] text-white/40">
+          Processed by: <span className="font-medium text-white/60">{step.actionBy}</span>
+          {step.actionAt ? ` on ${fmt(step.actionAt)}` : ""}
+        </p>
+      )}
+      {showTl && stepLogs.length > 0 && (
+        <div className="mt-1.5 space-y-1.5">
+          {stepLogs.map((log, i) => <TimelineEvent key={i} log={log} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Group Card (for lab groups) ───────────────────────────────────────────────
 
-function GroupCard({ groupLabel, steps, isLast }) {
+function GroupCard({ groupLabel, steps, logs, isLast }) {
   const [expanded, setExpanded] = useState(false);
   const allApproved = steps.every((s) => s.status === "approved");
   const anyRejected = steps.some((s) => s.status === "rejected");
@@ -120,23 +353,7 @@ function GroupCard({ groupLabel, steps, isLast }) {
         </button>
         {expanded && (
           <div className="border-t border-white/10 px-4 py-3 space-y-3">
-            {steps.map((step) => {
-              const sc = cfg(step.status);
-              return (
-                <div key={step._id} className="flex flex-col gap-1 border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs text-white/70">{step.unitLabel}</p>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${sc.badge}`}>{sc.label}</span>
-                  </div>
-                  {(step.status === "approved" || step.status === "rejected") && step.actionBy && (
-                    <p className="text-[10px] text-white/40">
-                      Processed by: <span className="font-medium text-white/60">{step.actionBy}</span>
-                      {step.actionAt ? ` on ${new Date(step.actionAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}` : ""}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
+            {steps.map((step) => <LabStepRow key={step._id} step={step} logs={logs} />)}
           </div>
         )}
       </div>
@@ -154,19 +371,18 @@ const GROUP_LABELS = {
 };
 
 function organiseSteps(steps) {
-  const grouped = []; // [{type:'group'|'step', ...}]
+  const grouped = [];
   const seenGroups = new Set();
 
   const groupBuckets = {};
   for (const step of steps) {
-    const g = step.unitGroup;  // from backend: step.unitGroup = ALL_UNIT_CODES[unitCode].group
+    const g = step.unitGroup;
     if (g && GROUP_LABELS[g]) {
       if (!groupBuckets[g]) groupBuckets[g] = [];
       groupBuckets[g].push(step);
     }
   }
 
-  // Preserve original order but merge lab steps into group cards
   const ORDER = [
     "medical", "sports", "lucs", "warden", "placement", "administration",
     "library_staff", "library_librarian",
@@ -193,7 +409,6 @@ function organiseSteps(steps) {
     }
   }
 
-  // Append any remaining steps not in the ORDER list
   for (const s of steps) {
     if (!used.has(s._id)) grouped.push({ type: "step", step: s });
   }
@@ -201,7 +416,7 @@ function organiseSteps(steps) {
   return grouped;
 }
 
-// ── Overall status pill ───────────────────────────────────────────────────────
+// ── Overall status banner ─────────────────────────────────────────────────────
 
 function OverallStatusBanner({ status }) {
   const map = {
@@ -223,25 +438,51 @@ function OverallStatusBanner({ status }) {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function StudentTrack() {
-  const { currentApplication } = useOutletContext();
+  const { currentApplication, refreshStudentData } = useOutletContext();
   const [steps, setSteps] = useState([]);
+  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [reapplying, setReapplying] = useState(false);
   const [reapplyMsg, setReapplyMsg] = useState("");
+  const [showReapplyModal, setShowReapplyModal] = useState(false);
+
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchSteps = useCallback(async () => {
     if (!currentApplication?._id) return;
+
+    setLoading(true);
+    setError("");
+
+    // 1. Fetch steps — critical call.
     try {
-      setLoading(true);
-      setError("");
-      const res = await api.get(`/student/request/${currentApplication._id}/steps`);
-      setSteps(res.data.steps || []);
+      const stepsRes = await api.get(`/student/request/${currentApplication._id}/steps`);
+      setSteps(stepsRes.data.steps || []);
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to load progress.");
-    } finally {
-      setLoading(false);
+      const status = err.response?.status;
+      if (status === 403) {
+        setError("Your session token is outdated. Please log out and log back in to refresh your session.");
+      } else if (status === 401) {
+        // Token genuinely missing — redirect to login explicitly here (no global interceptor).
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+        return;
+      } else {
+        setError(err.response?.data?.error || "Failed to load progress. Please try again.");
+      }
     }
+
+    // 2. Fetch event logs — best-effort, never blocks steps display.
+    try {
+      const logsRes = await api.get(`/student/request/${currentApplication._id}/logs`);
+      setLogs(logsRes.data.logs || []);
+    } catch (_logErr) {
+      // Silent — timeline degrades gracefully to empty, no error shown.
+    }
+
+    setLoading(false);
   }, [currentApplication?._id]);
 
   useEffect(() => { fetchSteps(); }, [fetchSteps]);
@@ -267,7 +508,6 @@ export default function StudentTrack() {
   const rejectedSteps = steps.filter((s) => s.status === "rejected");
   const hasRejections = rejectedSteps.length > 0;
 
-  // Compute overall status from actual step states (not backend field)
   const overallStatus = total === 0
     ? "in_progress"
     : hasRejections
@@ -276,11 +516,20 @@ export default function StudentTrack() {
         ? "approved"
         : "in_progress";
 
-  const handleReapply = async () => {
+  const handleReapply = async ({ comment, file }) => {
     try {
       setReapplying(true);
       setReapplyMsg("");
-      await api.post("/student/reapply");
+
+      const fd = new FormData();
+      if (comment) fd.append("comment", comment);
+      if (file) fd.append("reapplyFile", file);
+
+      await api.post("/student/reapply", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setShowReapplyModal(false);
       await fetchSteps();
     } catch (err) {
       setReapplyMsg(`❌ ${err.response?.data?.error || "Reapply failed. Please try again."}`);
@@ -299,10 +548,31 @@ export default function StudentTrack() {
             <p className="mt-2 text-white/70">Monitor your No Dues request across all departments.</p>
           </div>
           <button
-            onClick={fetchSteps}
-            className="self-start rounded-xl border border-white/15 px-4 py-2 text-sm text-white/80 hover:bg-white/10"
+            onClick={async () => {
+              setRefreshing(true);
+              setError("");
+              try {
+                // Step 1: Re-fetch currentApplication from Layout (updates status, etc.)
+                if (refreshStudentData) await refreshStudentData();
+                // Step 2: Re-fetch steps + logs for the track timeline
+                await fetchSteps();
+              } catch (_) {
+                // Errors handled inside fetchSteps — nothing to do here
+              } finally {
+                setRefreshing(false);
+              }
+            }}
+            disabled={refreshing || loading}
+            className={`self-start flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm transition
+              ${refreshing || loading
+                ? "cursor-not-allowed text-white/30 border-white/5"
+                : "text-white/80 hover:bg-white/10 hover:text-white"
+              }`}
           >
-            ↻ Refresh
+            {refreshing
+              ? (<><span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />Refreshing…</>)
+              : "↻ Refresh"
+            }
           </button>
         </div>
       </div>
@@ -318,8 +588,17 @@ export default function StudentTrack() {
                 Only the steps on hold will be reviewed again after you resubmit — approved steps remain unchanged.
               </p>
             </div>
+            {/* Reapply Modal */}
+            {showReapplyModal && (
+              <ReapplyModal
+                submitting={reapplying}
+                onCancel={() => { if (!reapplying) setShowReapplyModal(false); }}
+                onSubmit={handleReapply}
+              />
+            )}
+
             <button
-              onClick={handleReapply}
+              onClick={() => setShowReapplyModal(true)}
               disabled={reapplying}
               className={`shrink-0 rounded-xl border px-5 py-2.5 text-sm font-semibold transition ${reapplying
                 ? "cursor-not-allowed border-white/10 text-white/30"
@@ -349,7 +628,7 @@ export default function StudentTrack() {
             ))}
           </div>
 
-          {/* Error only (success msg removed per UX spec) */}
+          {/* Error only */}
           {reapplyMsg && !reapplyMsg.startsWith("✅") && (
             <p className="mt-3 text-xs text-red-300">{reapplyMsg}</p>
           )}
@@ -388,7 +667,10 @@ export default function StudentTrack() {
 
       {/* Step Timeline */}
       <div className="rounded-2xl border border-white/15 bg-white/5 p-6">
-        <h2 className="mb-6 text-lg font-semibold text-white">Department Clearance Status</h2>
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white">Department Clearance Timeline</h2>
+          <p className="text-xs text-white/40">Click "Timeline" on each step to see full event history</p>
+        </div>
 
         {loading && (
           <div className="flex items-center justify-center py-10">
@@ -407,9 +689,9 @@ export default function StudentTrack() {
         {!loading && !error && organised.map((item, idx) => {
           const isLast = idx === organised.length - 1;
           if (item.type === "group") {
-            return <GroupCard key={item.code} groupLabel={item.label} steps={item.steps} isLast={isLast} />;
+            return <GroupCard key={item.code} groupLabel={item.label} steps={item.steps} logs={logs} isLast={isLast} />;
           }
-          return <StepCard key={item.step._id} step={item.step} isLast={isLast} />;
+          return <StepCard key={item.step._id} step={item.step} logs={logs} isLast={isLast} />;
         })}
       </div>
     </div>

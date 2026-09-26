@@ -40,6 +40,14 @@ const noDuesRequestSchema = new mongoose.Schema(
         },
         submittedAt: { type: Date, default: Date.now },
         completedAt: { type: Date },
+        // ── Latest Reapply Data (global, visible to all depts) ───────────────────
+        // Overwritten on every reapply — departments use this to see student's
+        // latest explanation even if their step was reset by a different dept's rejection.
+        reapplyData: {
+            comment: { type: String, default: '' },
+            proofUrl: { type: String, default: '' },  // single Cloudinary URL
+            submittedAt: { type: Date },
+        },
     },
     { timestamps: true }
 );

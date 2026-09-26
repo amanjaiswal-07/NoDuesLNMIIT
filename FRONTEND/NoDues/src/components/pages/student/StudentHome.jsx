@@ -1,4 +1,5 @@
 import { useNavigate, useOutletContext } from "react-router-dom";
+import HowToApply from "./HowToApply";
 
 export default function StudentHome() {
   const navigate = useNavigate();
@@ -80,6 +81,9 @@ export default function StudentHome() {
           </button>
         </div>
       </div>
+
+      {/* ── How to Apply Guide ── */}
+      <HowToApply />
     </div>
   );
-}
+}

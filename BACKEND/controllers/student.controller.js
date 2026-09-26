@@ -490,7 +490,9 @@ async function applyForNoDues(req, res) {
 
 async function getActiveRequest(req, res) {
     try {
-        const request = await NoDuesRequest.findOne({ studentEmail: req.user.email }).sort({ createdAt: -1 });
+        // Use case-insensitive regex so email case mismatches between JWT and DB never cause a miss.
+        const emailRegex = new RegExp(`^${req.user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+        const request = await NoDuesRequest.findOne({ studentEmail: emailRegex }).sort({ createdAt: -1 });
         if (!request) return res.status(404).json({ error: 'No active request found' });
 
         // If the request has no clearance steps it is orphaned (manually deleted from DB).
@@ -509,8 +511,15 @@ async function getActiveRequest(req, res) {
 async function getRequestSteps(req, res) {
     try {
         const { requestId } = req.params;
-        const request = await NoDuesRequest.findOne({ _id: requestId, studentEmail: req.user.email });
+
+        // Find by _id only (ObjectId is exact — no email case-sensitivity risk),
+        // then verify ownership with a normalized lowercase comparison.
+        const request = await NoDuesRequest.findById(requestId);
         if (!request) return res.status(404).json({ error: 'Request not found' });
+        if (request.studentEmail.toLowerCase() !== req.user.email.toLowerCase()) {
+            return res.status(403).json({ error: 'Not authorized to view this request' });
+        }
+
         const steps = await ClearanceStep.find({ requestId });
         res.json({ steps });
     } catch (err) {
@@ -551,8 +560,10 @@ async function replyToRejectedStep(req, res) {
 async function reapply(req, res) {
     try {
         // Find most-recent active (non-fully-approved) request for this student
+        // Use case-insensitive email match to handle any case mismatch between JWT and DB.
+        const emailRegex = new RegExp(`^${req.user.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
         const request = await NoDuesRequest.findOne({
-            studentEmail: req.user.email,
+            studentEmail: emailRegex,
             status: { $in: ['action_required', 'in_progress'] },
         }).sort({ createdAt: -1 });
 
@@ -566,6 +577,24 @@ async function reapply(req, res) {
         if (rejectedSteps.length === 0) {
             return res.status(400).json({ error: 'No rejected steps found. Nothing to reapply.' });
         }
+
+        // ── Persist reapply data (ALWAYS overwrite — clears old data if nothing provided) ──
+        const comment = req.body?.comment?.trim() || '';
+        const proofUrl = req.file ? req.file.path : '';
+        const reapplyTimestamp = new Date();
+
+        // Save on each rejected step (the step-level data for departments that put it on hold)
+        for (const step of rejectedSteps) {
+            step.studentReply = comment;                    // '' clears previous comment
+            step.studentProofUrls = proofUrl ? [proofUrl] : [];  // replaces array entirely
+            step.repliedAt = reapplyTimestamp;
+            await step.save();
+        }
+
+        // Save globally on the request so ALL affected departments can see it
+        request.reapplyData = { comment, proofUrl, submittedAt: reapplyTimestamp };
+        await request.save();
+        // ───────────────────────────────────────────────────────────────────────
 
         // Collect all unit codes that should be reset to 'pending'
         const toResetPending = new Set();
@@ -601,6 +630,19 @@ async function reapply(req, res) {
         }
 
         const logs = [];
+
+        // Log 'reapply' event on each rejected step (before reset, so log shows which dept was on hold)
+        for (const s of rejectedSteps) {
+            logs.push({
+                stepId: s._id,
+                requestId: request._id,
+                action: 'reapply',
+                actorEmail: req.user.email,
+                actorRole: 'student',
+                note: comment,
+                proofUrls: proofUrl ? [proofUrl] : [],
+            });
+        }
 
         // Apply resets
         for (const s of allSteps) {
@@ -648,6 +690,85 @@ async function reapply(req, res) {
     }
 }
 
+// ── Reapply Proof Proxy (for department ViewDetailsModal) ─────────────────────
+
+/**
+ * GET /api/student/reapply/proof/:stepId/:index
+ * Proxies the student's reapply proof file stored in ClearanceStep.studentProofUrls.
+ * Requires staff auth — verified by checking that the step belongs to a request
+ * associated with a student, then streaming the Cloudinary file.
+ * Note: this route is called from the CLEARANCE (department) side via a dedicated
+ * clearance route, but the proxy logic lives here for co-location with reapply.
+ */
+async function getReapplyProof(req, res) {
+    try {
+        const { stepId } = req.params;
+        const index = parseInt(req.params.index, 10) || 0;
+
+        const step = await ClearanceStep.findById(stepId).populate('requestId');
+        if (!step) return res.status(404).json({ error: 'Step not found' });
+
+        const urls = step.studentProofUrls || [];
+        if (index < 0 || index >= urls.length) {
+            return res.status(404).json({ error: 'Proof file not found at that index' });
+        }
+
+        let fileUrl = urls[index];
+
+        // Cloudinary URL fixes (same as other proxy handlers)
+        if (fileUrl.includes('/image/upload/') && fileUrl.toLowerCase().endsWith('.pdf')) {
+            fileUrl = fileUrl.replace('/image/upload/', '/raw/upload/');
+        }
+        fileUrl = fileUrl.replace(/\/fl_attachment/g, '');
+
+        const proxyRes = await fetchFollowingRedirects(fileUrl);
+
+        let contentType = proxyRes.headers['content-type'] || 'application/octet-stream';
+        if (fileUrl.toLowerCase().endsWith('.pdf') || contentType === 'application/octet-stream') {
+            contentType = 'application/pdf';
+        }
+
+        if (contentType.startsWith('text/html')) {
+            return res.status(502).json({ error: 'File could not be retrieved from storage.' });
+        }
+
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', 'inline');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        proxyRes.pipe(res);
+
+    } catch (err) {
+        console.error('getReapplyProof error:', err);
+        res.status(500).json({ error: err.message });
+    }
+}
+
+// ── GET Request Logs (for event timeline) ───────────────────────────────────
+
+/**
+ * GET /api/student/request/:requestId/logs
+ * Returns all StepActionLog entries for a request, sorted by timestamp ascending.
+ * Only available to the student who owns the request.
+ */
+async function getRequestLogs(req, res) {
+    try {
+        const { requestId } = req.params;
+
+        // Find by _id only, then verify ownership with case-insensitive email comparison.
+        const request = await NoDuesRequest.findById(requestId);
+        if (!request) return res.status(404).json({ error: 'Request not found' });
+        if (request.studentEmail.toLowerCase() !== req.user.email.toLowerCase()) {
+            return res.status(403).json({ error: 'Not authorized to view this request' });
+        }
+
+        const logs = await StepActionLog.find({ requestId }).sort({ timestamp: 1 }).lean();
+        res.json({ logs });
+    } catch (err) {
+        console.error('getRequestLogs error:', err);
+        res.status(500).json({ error: err.message });
+    }
+}
+
 module.exports = {
     getProfile,
     updateProfile,
@@ -657,4 +778,6 @@ module.exports = {
     getRequestSteps,
     replyToRejectedStep,
     reapply,
+    getReapplyProof,
+    getRequestLogs,
 };

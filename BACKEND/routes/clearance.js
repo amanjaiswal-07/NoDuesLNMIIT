@@ -4,6 +4,7 @@ const verifyToken = require('../middleware/verifyToken');
 // requireRole has been removed in favor of strict unitCode permission checking
 const { attachPermissionChecker } = require('../middleware/requirePermission');
 const clearanceController = require('../controllers/clearance.controller');
+const studentController = require('../controllers/student.controller');
 
 // All clearance routes require authentication. Specific unitCode authorization happens in attachPermissionChecker
 router.use(verifyToken);
@@ -31,5 +32,8 @@ router.delete('/:unitCode/access/:userId', clearanceController.removeDepartmentA
 router.get('/:stepId/details', clearanceController.getStepDetails);
 router.get('/:stepId/full', clearanceController.getStepFull);
 router.get('/:stepId/file/:fieldName', clearanceController.getStepFile);
+
+// Reapply proof proxy — dept officers view student's reapply evidence
+router.get('/reapply/proof/:stepId/:index', studentController.getReapplyProof);
 
 module.exports = router;

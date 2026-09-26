@@ -20,6 +20,99 @@
 import { useEffect, useState, useCallback } from "react";
 import api from "../../api/client";
 
+// ── In-app File Preview Modal ─────────────────────────────────────────────────
+// Uses Google Docs Viewer for PDFs so Cloudinary's Content-Disposition:
+// attachment header doesn't trigger a browser download.
+function FilePreviewModal({ url, onClose }) {
+  // Keep a stable ref to onClose so the ESC effect never stale-closes.
+  const onCloseRef = { current: onClose };
+  onCloseRef.current = onClose;
+
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  // ESC to close — registered once on mount.
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onCloseRef.current(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!url) return null;
+
+  // Detect PDF: Cloudinary raw uploads contain '/raw/' in the path, or URL ends in .pdf
+  const isPdf = /\.pdf(\?|$)/i.test(url) || url.includes('/raw/');
+
+  // Google Docs Viewer renders any public URL (including Cloudinary) without Content-Disposition issues
+  const googleViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/85 backdrop-blur-sm"
+        aria-label="Close preview"
+      />
+      {/* Panel */}
+      <div className="relative z-10 flex flex-col w-full max-w-4xl max-h-[92vh] rounded-2xl border border-white/15 bg-neutral-900 shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 shrink-0">
+          <p className="text-sm font-semibold text-white/80">
+            Document Preview {isPdf ? '· PDF' : '· Image'}
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-white/50 hover:bg-white/10 hover:text-white transition"
+            aria-label="Close"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-auto bg-neutral-950 flex items-center justify-center">
+          {isPdf ? (
+            /* PDF → Google Docs Viewer bypasses Cloudinary's attachment header */
+            <iframe
+              key={url}
+              src={googleViewerUrl}
+              title="Document preview"
+              className="w-full h-[78vh] border-0"
+              allow="autoplay"
+            />
+          ) : imgError ? (
+            <div className="flex flex-col items-center gap-3 py-12 text-white/40">
+              <span className="text-4xl">🖼️</span>
+              <p className="text-sm">Could not load image.</p>
+            </div>
+          ) : (
+            <div className="relative flex items-center justify-center p-3 min-h-[40vh]">
+              {!imgLoaded && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-white/60" />
+                </div>
+              )}
+              <img
+                src={url}
+                alt="Document preview"
+                className={`max-h-[75vh] max-w-full object-contain rounded-lg select-none transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+                onLoad={() => setImgLoaded(true)}
+                onError={() => { setImgError(true); setImgLoaded(true); }}
+                onContextMenu={(e) => e.preventDefault()}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Status pill ──────────────────────────────────────────────────────────
 function StatusPill({ status }) {
   if (status === "approved")
@@ -121,8 +214,77 @@ function DocPreview({ label, fieldName, isPdf = false, stepId }) {
     </div>
   );
 }
+// ── Reapply evidence viewer (proxied via /clearance/reapply/proof/:stepId/0) ───
+// Uses the same clearance-side auth as DocPreview but hits the reapply proof route.
+function ReapplyProofPreview({ stepId }) {
+  const [url, setUrl] = useState(null);
+  const [isPdf, setIsPdf] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-// ── Department-specific detail tables ──────────────────────────────────────────
+  useEffect(() => {
+    if (!stepId) { setLoading(false); return; }
+    let objectUrl = null;
+    setLoading(true);
+    setError("");
+    setUrl(null);
+
+    api.get(`/clearance/reapply/proof/${stepId}/0`, { responseType: "blob" })
+      .then((res) => {
+        const ct = res.data.type || "";
+        const pdf = ct === "application/pdf" || ct.includes("pdf");
+        setIsPdf(pdf);
+        const blob = new Blob([res.data], { type: pdf ? "application/pdf" : ct || "image/jpeg" });
+        objectUrl = URL.createObjectURL(blob);
+        setUrl(objectUrl);
+      })
+      .catch((err) => {
+        const msg = err.response?.data?.error || "Could not load document.";
+        setError(msg);
+      })
+      .finally(() => setLoading(false));
+
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [stepId]);
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
+        <p className="text-sm font-semibold text-white/80">Supporting Document</p>
+        {url && (
+          <a href={url} target="_blank" rel="noreferrer"
+            className="text-xs text-white/40 hover:text-white/70 underline transition-colors">
+            Open ↗
+          </a>
+        )}
+      </div>
+      <div className="p-3">
+        {loading && (
+          <div className="flex items-center gap-2 py-4">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/10 border-t-white/60" />
+            <p className="text-xs text-white/40">Loading…</p>
+          </div>
+        )}
+        {!loading && error && <p className="py-3 text-xs text-rose-400">{error}</p>}
+        {url && !isPdf && (
+          <img src={url} alt="Reapply proof"
+            className="max-h-64 w-full rounded-lg object-contain border border-white/10 bg-black" />
+        )}
+        {url && isPdf && (
+          <iframe
+            title="Reapply proof"
+            src={`${url}#toolbar=1&navpanes=0`}
+            className="w-full rounded-lg border border-white/10 bg-white"
+            style={{ height: "340px", minHeight: "280px" }}
+            allow="fullscreen"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Department-specific detail tables ───────────────────────────────────────
 function WardenSection({ profile }) {
   return (
     <div className="grid grid-cols-2 gap-3">
@@ -276,6 +438,7 @@ export default function ViewDetailsModal({ open, student, currentDepartment, onC
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState("");
+  const [previewFile, setPreviewFile] = useState(null);
 
   // useDepartmentData flattens step._id into both `stepId` and `id` fields (not `_id`)
   const stepId = student?.stepId || student?.id || student?._id;
@@ -403,31 +566,127 @@ export default function ViewDetailsModal({ open, student, currentDepartment, onC
                     </p>
                   )}
                 </div>
+              </div>
 
-                {/* Rejection details */}
-                {currentStatus === "rejected" && (
-                  <div className="mt-3 rounded-xl border border-rose-400/30 bg-rose-500/10 p-4">
-                    <p className="text-sm font-semibold text-rose-300">⛔ Hold Details</p>
-                    <div className="mt-2 space-y-1.5">
-                      <div>
-                        <p className="text-[11px] text-rose-300/60">Reason</p>
-                        <p className="text-sm text-rose-200">{step?.rejectionReason || "—"}</p>
-                      </div>
-                      {step?.rejectionDescription && (
-                        <div>
-                          <p className="text-[11px] text-rose-300/60">Description</p>
-                          <p className="text-sm text-rose-200">{step.rejectionDescription}</p>
-                        </div>
-                      )}
-                      {step?.rejectedAt && (
-                        <p className="text-[11px] text-rose-300/40">
-                          Placed on hold at {new Date(step.rejectedAt).toLocaleString()}
-                        </p>
-                      )}
+              {/* ── 2b. On Hold History (all holds from stepLogs) ── */}
+              {(() => {
+                const stepLogs = data?.stepLogs || [];
+                const holdLogs = stepLogs.filter((l) => l.action === 'rejected');
+                if (holdLogs.length === 0) return null;
+                return (
+                  <div>
+                    <SectionHeading>On Hold History</SectionHeading>
+                    <div className="space-y-2.5">
+                      {holdLogs.map((log, i) => {
+                        // Backend stores: note = `[${reason}] ${description}`
+                        const raw = log.note || '';
+                        const bracketMatch = raw.match(/^\[(.+?)\]\s*([\s\S]*)$/);
+                        const reason      = bracketMatch ? bracketMatch[1].trim() : raw;
+                        const description = bracketMatch ? bracketMatch[2].trim() : '';
+
+                        return (
+                          <div key={i} className="rounded-xl border border-rose-400/25 bg-rose-500/[0.08] p-3.5 space-y-1.5">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-rose-400/70">
+                              Hold #{i + 1}
+                            </p>
+                            {reason && (
+                              <div>
+                                <p className="text-[10px] text-rose-300/50">Reason</p>
+                                <p className="text-sm text-rose-200">{reason}</p>
+                              </div>
+                            )}
+                            {description && (
+                              <div>
+                                <p className="text-[10px] text-rose-300/50">Description</p>
+                                <p className="text-sm text-rose-200/80">{description}</p>
+                              </div>
+                            )}
+                            <div className="flex flex-wrap gap-3 pt-0.5">
+                              {log.actorEmail && log.actorEmail !== 'system' && (
+                                <p className="text-[10px] text-white/35">
+                                  By: <span className="text-white/55">{log.actorEmail}</span>
+                                </p>
+                              )}
+                              {log.timestamp && (
+                                <p className="text-[10px] text-white/30">
+                                  {new Date(log.timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                )}
-              </div>
+                );
+              })()}
+
+              {/* ── 2c. Reapply History (all reapply attempts from stepLogs) ── */}
+              {(() => {
+                const stepLogs = data?.stepLogs || [];
+                const reapplyLogs = stepLogs.filter((l) => l.action === 'reapply');
+                if (reapplyLogs.length === 0) return null;
+                return (
+                  <div>
+                    <SectionHeading>Reapply History</SectionHeading>
+                    <div className="space-y-2.5">
+                      {reapplyLogs.map((log, i) => {
+                        // Each log stores the comment in `note` and files in `proofUrls`
+                        const comment  = log.note?.trim() || '';
+                        const hasFile  = log.proofUrls?.length > 0;
+                        const hasAny   = comment || hasFile;
+
+                        return (
+                          <div key={i} className="rounded-xl border border-blue-400/20 bg-blue-500/[0.06] p-3.5 space-y-2">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400/60">
+                              Reapply #{i + 1}
+                            </p>
+
+                            {hasAny ? (
+                              <>
+                                {comment ? (
+                                  <div>
+                                    <p className="text-[10px] text-blue-300/50">Student Comment</p>
+                                    <p className="text-sm text-blue-100 leading-relaxed whitespace-pre-wrap">{comment}</p>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-white/30 italic">No comment provided.</p>
+                                )}
+
+                                {hasFile && (
+                                  <div className="flex flex-wrap gap-2 pt-0.5">
+                                    {log.proofUrls.map((url, fi) => (
+                                      <button
+                                        key={fi}
+                                        type="button"
+                                        onClick={() => setPreviewFile(url)}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-400/25 bg-blue-500/10 px-3 py-1.5 text-xs text-blue-200 hover:bg-blue-500/20 transition"
+                                      >
+                                        📎 View Document {log.proofUrls.length > 1 ? fi + 1 : ''}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              /* Edge case: student submitted reapply with NO comment AND NO file */
+                              <p className="text-xs text-white/30 italic">
+                                No clarification provided by student.
+                              </p>
+                            )}
+
+                            {log.timestamp && (
+                              <p className="text-[10px] text-white/25 pt-0.5">
+                                {new Date(log.timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* ── 3. Prerequisite Approvals ── */}
               {showPrereq && allSteps.length > 0 && (
@@ -468,6 +727,11 @@ export default function ViewDetailsModal({ open, student, currentDepartment, onC
           </button>
         </div>
       </div>
+
+      {/* In-app file preview — z-[200] sits above this modal (z-[120]) */}
+      {previewFile && (
+        <FilePreviewModal url={previewFile} onClose={() => setPreviewFile(null)} />
+      )}
     </div>
   );
 }

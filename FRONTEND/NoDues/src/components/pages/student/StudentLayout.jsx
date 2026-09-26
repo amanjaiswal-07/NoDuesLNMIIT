@@ -28,47 +28,67 @@ export default function StudentLayout() {
   const fetchStudentData = async () => {
     try {
       setIsLoading(true);
-      // 1. Get profile
-      const profileRes = await api.get('/student/profile');
+
+      // 1. Fetch profile — 401 here is the ONLY legitimate reason to redirect to login.
+      let profileRes;
+      try {
+        profileRes = await api.get('/student/profile');
+      } catch (profileErr) {
+        if (profileErr.response?.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/');
+          return;
+        }
+        // Network error / 500 — stay on page, don't wipe state.
+        console.error('Profile fetch error:', profileErr);
+        return;
+      }
+
       const profile = profileRes.data.profile;
       setStudentProfile(profile);
-
-      // Determine if profile is "complete" enough to apply from the backend validation flag natively
       setProfileComplete(profile.profileCompleted || false);
 
-      // 2. Get active request
+      // 2. Fetch active request — 404 = no application yet (perfectly normal).
+      // NEVER clear currentApplication on failure — only update it on success.
       try {
         const reqRes = await api.get('/student/request');
         if (reqRes.data.request) {
           setCurrentApplication(reqRes.data.request);
-          setApplications([reqRes.data.request]); // Just the latest for now
+          setApplications([reqRes.data.request]);
         }
       } catch (reqErr) {
-        // 404 is fine, means no active request
         if (reqErr.response?.status !== 404) {
-          console.error("Error fetching active request:", reqErr);
+          console.error('Active request fetch error:', reqErr);
         }
+        // 404 → no application → leave currentApplication as-is.
       }
     } catch (err) {
-      console.error('Failed to load student data:', err);
+      console.error('fetchStudentData unexpected error:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    // Guard: must have an email AND a student role token. If not, send to login.
     if (!email) {
+      navigate('/');
+      return;
+    }
+    if (user?.role && user.role !== 'student') {
+      // A staff/admin token leaked into the student section — clear and redirect.
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       navigate('/');
       return;
     }
     fetchStudentData();
   }, [email, navigate]);
 
-  // We don't magically "createApplication" in Layout anymore. 
-  // It's handled by StudentApply submitting a form. 
-  // We just provide a refresh trigger down the context tree.
-  const refreshStudentData = () => {
-    fetchStudentData();
+  // Exposed to child routes via context — awaitable so Track can chain its own refetch.
+  const refreshStudentData = async () => {
+    await fetchStudentData();
   };
 
   const handleLogout = () => {

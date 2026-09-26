@@ -5,8 +5,22 @@ const requireRole = require('../middleware/requireRole');
 const upload = require('../config/multer');
 const studentController = require('../controllers/student.controller');
 
-// All student routes require authentication + 'student' role
-router.use(verifyToken, requireRole('student'));
+// All student routes require a verified JWT.
+// We accept EITHER:
+//   (a) role === 'student'  (new tokens issued after the role field was added), OR
+//   (b) permissionCodes includes 'student' (older tokens issued before role field was added)
+// This prevents hard-refresh 403s for users whose stored token pre-dates the role field.
+const requireStudentAccess = (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
+    const hasRole = req.user.role === 'student';
+    const hasPerm = Array.isArray(req.user.permissionCodes) && req.user.permissionCodes.includes('student');
+    if (!hasRole && !hasPerm) {
+        return res.status(403).json({ error: 'Forbidden: student access required' });
+    }
+    next();
+};
+
+router.use(verifyToken, requireStudentAccess);
 
 // ── Profile ────────────────────────────────────────────────────────────────────
 router.get('/profile', studentController.getProfile);
@@ -35,6 +49,8 @@ router.post('/apply', studentController.applyForNoDues);
 // ── Tracking ───────────────────────────────────────────────────────────────────
 router.get('/request', studentController.getActiveRequest);
 router.get('/request/:requestId/steps', studentController.getRequestSteps);
+// Event timeline — all StepActionLog entries for this request
+router.get('/request/:requestId/logs', studentController.getRequestLogs);
 
 // ── Reply to Rejection ─────────────────────────────────────────────────────────
 router.post(
@@ -44,6 +60,10 @@ router.post(
 );
 
 // ── Reapply after rejection ─────────────────────────────────────────────────────
-router.post('/reapply', studentController.reapply);
+// upload.single so students can optionally attach one proof file
+router.post('/reapply', upload.single('reapplyFile'), studentController.reapply);
+
+// Reapply proof proxy — dept officers load this from the View Details modal
+router.get('/reapply/proof/:stepId/:index', studentController.getReapplyProof);
 
 module.exports = router;
