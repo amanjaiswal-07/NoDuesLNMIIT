@@ -72,9 +72,13 @@ function getDependenciesForUnit(unitCode, branch) {
         case 'hod_cse':
         case 'hod_ece':
         case 'hod_cce':
-        case 'hod_mech':
-            // HOD waits for all labs + lucs + library done
-            return HOD_PREREQUISITES;
+        case 'hod_mech': {
+            // HOD waits for all labs the student actually has + lucs + library done.
+            // Filtered against the student's applicable units so branch-specific labs
+            // (e.g. ece_lab_kundan, ECE only) never leave HOD waiting on a missing step.
+            const applicable = new Set(getApplicableUnitCodes(branch));
+            return HOD_PREREQUISITES.filter(code => applicable.has(code));
+        }
 
         case 'nad':
             // NAD waits for the student's HOD
