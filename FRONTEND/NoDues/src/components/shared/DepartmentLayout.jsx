@@ -9,6 +9,7 @@
  *   unitCodes  – array of unit codes this department manages
  *   title      – department display title
  *   basePath   – (optional) base route path for Header
+ *   pendingCountFilter – (optional) predicate; when given, the header badge counts only matching pending rows
  */
 
 import { Outlet, useNavigate } from "react-router-dom";
@@ -16,7 +17,7 @@ import { useEffect } from "react";
 import Header from "../Header/Header";
 import useDepartmentData from "../hooks/useDepartmentData";
 
-export default function DepartmentLayout({ role, unitCodes, title, basePath, headerPaths, headerLabels, children }) {
+export default function DepartmentLayout({ role, unitCodes, title, basePath, headerPaths, headerLabels, pendingCountFilter, children }) {
     const navigate = useNavigate();
     const {
         pending, approved, rejected,
@@ -63,7 +64,7 @@ export default function DepartmentLayout({ role, unitCodes, title, basePath, hea
             <Header
                 role={role}
                 basePath={basePath}
-                pendingCount={pending.length}
+                pendingCount={pendingCountFilter ? pending.filter(pendingCountFilter).length : pending.length}
                 paths={headerPaths}
                 labels={headerLabels}
             />

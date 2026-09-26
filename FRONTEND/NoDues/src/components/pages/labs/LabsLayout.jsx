@@ -100,6 +100,8 @@ export default function LabsLayout() {
       unitCodes={config.unitCodes}
       title={config.title}
       basePath={`/labs/${department}`}
+      // Header badge shows the selected lab's pending count only (none until a lab is picked)
+      pendingCountFilter={(req) => Boolean(selectedLab) && req.unitLabel === selectedLab}
     >
       {(contextData) => {
         // Filter tasks by the selected lab (matches unitLabel exactly)
@@ -120,6 +122,11 @@ export default function LabsLayout() {
               // Extra state needed by LabsHome, LabsPending, etc.
               department,
               LABS,
+              // Pending count per lab, for the lab dropdown
+              pendingByLab: contextData.pending.reduce((acc, r) => {
+                acc[r.unitLabel] = (acc[r.unitLabel] || 0) + 1;
+                return acc;
+              }, {}),
               selectedLab,
               setSelectedLab,
               labSelected: Boolean(selectedLab),

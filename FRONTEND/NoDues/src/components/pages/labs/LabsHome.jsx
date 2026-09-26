@@ -107,6 +107,7 @@ export default function LabsHome() {
     setSelectedLab,
     labSelected,
     pending,
+    pendingByLab = {},
   } = useOutletContext();
 
   const handleChange = (e) => {
@@ -134,7 +135,7 @@ export default function LabsHome() {
             <option value="">-- Select Lab --</option>
             {LABS.map((lab) => (
               <option key={lab} value={lab}>
-                {lab}
+                {lab}{pendingByLab[lab] ? ` — ${pendingByLab[lab]} pending` : ""}
               </option>
             ))}
           </select>
