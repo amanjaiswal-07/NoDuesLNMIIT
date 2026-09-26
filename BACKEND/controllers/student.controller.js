@@ -755,33 +755,57 @@ async function getReapplyProof(req, res) {
             return res.status(404).json({ error: 'Proof file not found at that index' });
         }
 
-        let fileUrl = urls[index];
-
-        // Cloudinary URL fixes (same as other proxy handlers)
-        if (fileUrl.includes('/image/upload/') && fileUrl.toLowerCase().endsWith('.pdf')) {
-            fileUrl = fileUrl.replace('/image/upload/', '/raw/upload/');
-        }
-        fileUrl = fileUrl.replace(/\/fl_attachment/g, '');
-
-        const proxyRes = await fetchFollowingRedirects(fileUrl);
-
-        let contentType = proxyRes.headers['content-type'] || 'application/octet-stream';
-        if (fileUrl.toLowerCase().endsWith('.pdf') || contentType === 'application/octet-stream') {
-            contentType = 'application/pdf';
-        }
-
-        if (contentType.startsWith('text/html')) {
-            return res.status(502).json({ error: 'File could not be retrieved from storage.' });
-        }
-
-        res.setHeader('Content-Type', contentType);
-        res.setHeader('Content-Disposition', 'inline');
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        proxyRes.pipe(res);
-
+        await streamProofFile(urls[index], res);
     } catch (err) {
         console.error('getReapplyProof error:', err);
         res.status(500).json({ error: err.message });
+    }
+}
+
+// Streams a stored proof file (Cloudinary) to the client without exposing its URL.
+async function streamProofFile(storedUrl, res) {
+    let fileUrl = storedUrl;
+
+    // Cloudinary URL fixes (same as other proxy handlers)
+    if (fileUrl.includes('/image/upload/') && fileUrl.toLowerCase().endsWith('.pdf')) {
+        fileUrl = fileUrl.replace('/image/upload/', '/raw/upload/');
+    }
+    fileUrl = fileUrl.replace(/\/fl_attachment/g, '');
+
+    const proxyRes = await fetchFollowingRedirects(fileUrl);
+
+    let contentType = proxyRes.headers['content-type'] || 'application/octet-stream';
+    if (fileUrl.toLowerCase().endsWith('.pdf') || contentType === 'application/octet-stream') {
+        contentType = 'application/pdf';
+    }
+
+    if (contentType.startsWith('text/html')) {
+        return res.status(502).json({ error: 'File could not be retrieved from storage.' });
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', 'inline');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    proxyRes.pipe(res);
+}
+
+// GET /student/logs/:logId/proof/:index — a document the student attached to a timeline event (e.g. a reapply)
+async function getMyLogProof(req, res) {
+    try {
+        const index = parseInt(req.params.index, 10) || 0;
+        const log = await StepActionLog.findById(req.params.logId).lean();
+        const fileUrl = log?.proofUrls?.[index];
+        if (!fileUrl) return res.status(404).json({ error: 'Document not found' });
+
+        const request = await NoDuesRequest.findById(log.requestId).select('studentEmail').lean();
+        if (!request || (request.studentEmail || '').toLowerCase() !== (req.user.email || '').toLowerCase()) {
+            return res.status(403).json({ error: 'Not authorized to view this file' });
+        }
+
+        await streamProofFile(fileUrl, res);
+    } catch (err) {
+        console.error('getMyLogProof error:', err);
+        if (!res.headersSent) res.status(500).json({ error: err.message });
     }
 }
 
@@ -812,6 +836,7 @@ async function getRequestLogs(req, res) {
 }
 
 module.exports = {
+    getMyLogProof,
     getProfile,
     updateProfile,
     getStudentFile,

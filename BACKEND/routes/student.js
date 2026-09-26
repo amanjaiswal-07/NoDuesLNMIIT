@@ -65,5 +65,6 @@ router.post('/reapply', upload.single('reapplyFile'), studentController.reapply)
 
 // Reapply proof proxy — dept officers load this from the View Details modal
 router.get('/reapply/proof/:stepId/:index', studentController.getReapplyProof);
+router.get('/logs/:logId/proof/:index', studentController.getMyLogProof);
 
 module.exports = router;

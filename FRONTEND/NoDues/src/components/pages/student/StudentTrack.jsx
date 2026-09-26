@@ -160,6 +160,46 @@ const fmt = (date) =>
     ? new Date(date).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
     : "";
 
+// ── Document attached to a timeline event (opens in a new tab) ───────────────
+
+function ProofLink({ logId, index, count }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const open = async () => {
+    // Open the tab synchronously so the browser doesn't block it as a popup
+    const tab = window.open("", "_blank");
+    setLoading(true);
+    setError("");
+    try {
+      const res = await api.get(`/student/logs/${logId}/proof/${index}`, { responseType: "blob" });
+      const url = URL.createObjectURL(res.data);
+      if (tab) tab.location.href = url;
+      else window.location.href = url;
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      if (tab) tab.close();
+      setError("Could not open the document.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <span className="inline-flex items-center gap-2">
+      <button
+        type="button"
+        onClick={open}
+        disabled={loading}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-400/30 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-200 transition hover:bg-blue-500/20 disabled:opacity-50"
+      >
+        📎 {loading ? "Opening…" : `View document${count > 1 ? ` ${index + 1}` : ""}`}
+      </button>
+      {error && <span className="text-[11px] text-rose-300">{error}</span>}
+    </span>
+  );
+}
+
 // ── Single timeline event ─────────────────────────────────────────────────────
 
 function TimelineEvent({ log }) {
@@ -199,7 +239,11 @@ function TimelineEvent({ log }) {
             <p className="mt-1 text-[11px] text-white/60 leading-relaxed break-words">{note}</p>
           )}
           {proofUrls && proofUrls.length > 0 && (
-            <p className="mt-1 text-[10px] text-blue-300/70">📎 Supporting document uploaded</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {proofUrls.map((_url, i) => (
+                <ProofLink key={i} logId={log._id} index={i} count={proofUrls.length} />
+              ))}
+            </div>
           )}
         </div>
       </div>
