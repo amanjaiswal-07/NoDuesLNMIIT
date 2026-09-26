@@ -1,5 +1,7 @@
 # LNMIIT No Dues Portal
 
+> ✅ **Successfully piloted in production during the senior batch convocation, processing 200+ student clearance requests.**
+
 A web portal where final-year students of **The LNM Institute of Information Technology (LNMIIT)**
 get their **No Dues clearance** online instead of carrying a paper form from office to office.
 
@@ -46,6 +48,7 @@ the student downloads the filled **No Dues certificate** (the institute's paper 
 20. [Troubleshooting](#20-troubleshooting)
 21. [Known limitations and future work](#21-known-limitations-and-future-work)
 22. [Glossary](#22-glossary)
+23. [Contributors](#23-contributors)
 
 ---
 
@@ -1472,3 +1475,16 @@ points to before running them.
 | **Application No.** | `ND-<year>-<ROLL>`, e.g. `ND-2026-23UEC513` |
 | **HOS** | Head of Section, the approver shown on the certificate |
 | **NAD** | National Academic Depository cell |
+
+---
+
+## 23. Contributors
+
+Thanks to the friends who contributed to this project:
+
+<table>
+  <tr>
+    <td align="center"><a href="https://github.com/parth420i"><img src="https://github.com/parth420i.png" width="80" alt="parth420i"/><br/><b>@parth420i</b></a></td>
+    <td align="center"><a href="https://github.com/jeeninub"><img src="https://github.com/jeeninub.png" width="80" alt="jeeninub"/><br/><b>@jeeninub</b></a></td>
+  </tr>
+</table>
