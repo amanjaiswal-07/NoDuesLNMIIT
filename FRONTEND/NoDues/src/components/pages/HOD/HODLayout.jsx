@@ -1,9 +1,10 @@
 /**
- * HODLayout — reads the logged-in user's permissionCodes to determine
- * which HOD unit code (hod_cse | hod_ece | hod_cce | hod_mech) they hold.
- * Only that department's requests are fetched.
+ * HODLayout — the HOD shown is taken from the URL (/hod/cse → hod_cse), so the
+ * page always matches the address bar. PrivateRoute already ensures the user
+ * holds that HOD role (or is admin); if the URL is not a known HOD we fall back
+ * to the first HOD role the user holds.
  */
-import { Outlet } from "react-router-dom";
+import { Outlet, useParams } from "react-router-dom";
 import DepartmentLayout from "../../shared/DepartmentLayout";
 
 const HOD_LABELS = {
@@ -16,12 +17,14 @@ const HOD_LABELS = {
 const HOD_CODES = Object.keys(HOD_LABELS);
 
 export default function HODLayout() {
+  const { department } = useParams();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  // Find the first HOD code this user has permission for
-  const hodCode = user?.permissionCodes?.find((c) => HOD_CODES.includes(c)) || "hod_cse";
-  const title = HOD_LABELS[hodCode] || "HOD";
+  const fromUrl = `hod_${(department || "").toLowerCase()}`;
+  const hodCode = HOD_CODES.includes(fromUrl)
+    ? fromUrl
+    : user?.permissionCodes?.find((c) => HOD_CODES.includes(c)) || "hod_cse";
+  const title = HOD_LABELS[hodCode];
 
-  // Create a display label like "CSE", "ECE", "CCE", "MECH" to pass to child pages
   const departmentLabel = title.replace("HOD - ", "");
 
   return (

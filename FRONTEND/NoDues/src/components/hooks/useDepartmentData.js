@@ -55,6 +55,10 @@ export default function useDepartmentData(unitCodes) {
             actionBy: step.actionBy || "",
             actionAt: step.actionAt || null,
 
+            // Library staff only: what the Librarian did with the forwarded request
+            librarianStatus: step.librarianStatus || null,
+            librarianReason: step.librarianReason || "",
+
             // Backwards-compat flat fields used by existing UI components
             name: req.studentName || "—",
             roll: req.rollNo || "—",

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { useOutletContext } from "react-router-dom";
-import ConfirmModal from "../../Modal/ConfirmModal";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import api from "../../../api/client";
 
 function StatusBadge({ status }) {
@@ -38,7 +37,8 @@ function StatusBadge({ status }) {
   );
 }
 
-function HistoryCard({ item, hasOngoingApplication, isSubmitting, onReapply }) {
+function HistoryCard({ item }) {
+  const navigate = useNavigate();
   const [steps, setSteps] = useState([]);
   const [overallStatus, setOverallStatus] = useState(item.status || "pending");
 
@@ -104,15 +104,14 @@ function HistoryCard({ item, hasOngoingApplication, isSubmitting, onReapply }) {
         </div>
       )}
 
-      {overallStatus === "rejected" && !hasOngoingApplication && (
+      {overallStatus === "rejected" && (
         <div className="mt-4">
           <button
             type="button"
-            disabled={isSubmitting}
-            onClick={() => onReapply(item)}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold text-white ${isSubmitting ? "bg-blue-600/50 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}
+            onClick={() => navigate("/student/track")}
+            className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
           >
-            {isSubmitting ? "Reapplying..." : "Reapply"}
+            Go to Track to Reapply
           </button>
         </div>
       )}
@@ -134,28 +133,8 @@ function HistoryCard({ item, hasOngoingApplication, isSubmitting, onReapply }) {
 }
 
 export default function StudentHistory() {
-  const { applications, currentApplication, refreshStudentData } = useOutletContext();
-
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [reapplyTarget, setReapplyTarget] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const hasOngoingApplication = Boolean(currentApplication);
+  const { applications } = useOutletContext();
   const displayApplications = applications || [];
-
-  const handleReapply = async () => {
-    try {
-      setIsSubmitting(true);
-      await api.post('/student/request');
-      refreshStudentData();
-    } catch (err) {
-      alert(err.response?.data?.error || "Failed to reapply");
-    } finally {
-      setIsSubmitting(false);
-      setConfirmOpen(false);
-      setReapplyTarget(null);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -177,35 +156,9 @@ export default function StudentHistory() {
         )}
 
         {displayApplications.map((item) => (
-          <HistoryCard
-            key={item._id || item.id}
-            item={item}
-            hasOngoingApplication={hasOngoingApplication}
-            isSubmitting={isSubmitting}
-            onReapply={(target) => {
-              setReapplyTarget(target);
-              setConfirmOpen(true);
-            }}
-          />
+          <HistoryCard key={item._id || item.id} item={item} />
         ))}
       </div>
-
-      <ConfirmModal
-        open={confirmOpen}
-        title="Reapply for No Dues?"
-        message={
-          reapplyTarget
-            ? `Are you sure you want to create a new No Dues application? Make sure you have resolved the previous rejection reason.`
-            : ""
-        }
-        confirmText="Yes, reapply"
-        cancelText="Cancel"
-        onClose={() => {
-          setConfirmOpen(false);
-          setReapplyTarget(null);
-        }}
-        onConfirm={handleReapply}
-      />
     </div>
   );
 }

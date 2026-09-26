@@ -98,6 +98,20 @@ async function getStepsByStatus(req, res, status) {
             }
         }
 
+        // Library staff's "Sent" tab shows what the Librarian did with each forwarded request
+        if (unitCode === 'library_staff' && filteredSteps.length > 0) {
+            const ids = filteredSteps.map(s => s.requestId?._id || s.requestId).filter(Boolean);
+            const librarianSteps = await ClearanceStep.find(
+                { requestId: { $in: ids }, unitCode: 'library_librarian' },
+                'requestId status rejectionReason'
+            ).lean();
+            const byRequest = Object.fromEntries(librarianSteps.map(l => [String(l.requestId), l]));
+            filteredSteps = filteredSteps.map(s => {
+                const lib = byRequest[String(s.requestId?._id || s.requestId)];
+                return { ...s.toObject(), librarianStatus: lib?.status || null, librarianReason: lib?.rejectionReason || '' };
+            });
+        }
+
         res.json({ steps: filteredSteps });
     } catch (err) {
         res.status(500).json({ error: err.message });

@@ -11,13 +11,16 @@ export default function LibraryStaffSent() {
   const badgeClass = (status) => {
     if (status === "Approved by Librarian")
       return "border-emerald-400/40 text-emerald-300 bg-emerald-500/10";
-    if (status === "Rejected by Librarian")
+    if (status === "On Hold by Librarian")
       return "border-rose-400/40 text-rose-300 bg-rose-500/10";
-    return "border-white/20 text-white/80 bg-white/5"; // Pending by Librarian
+    return "border-white/20 text-white/80 bg-white/5"; // Pending with Librarian
   };
 
-  const getStatus = (s) => s?.tracking?.status || "Pending by Librarian";
-  const getReason = (s) => s?.tracking?.librarianReason || "";
+  const getStatus = (s) => {
+    if (s?.librarianStatus === "approved") return "Approved by Librarian";
+    if (s?.librarianStatus === "rejected") return "On Hold by Librarian";
+    return "Pending with Librarian";
+  };
 
   return (
     <div className="mx-auto w-full max-w-7xl">
@@ -50,6 +53,7 @@ export default function LibraryStaffSent() {
               <div className="ml-auto flex shrink-0 items-center gap-3">
                 {/* Status badge */}
                 <span
+                  title={s.librarianReason || undefined}
                   className={`rounded-xl border px-3 py-2 text-xs font-semibold ${badgeClass(
                     getStatus(s)
                   )}`}
@@ -77,10 +81,7 @@ export default function LibraryStaffSent() {
       <ViewDetailsModal
         open={viewOpen}
         student={viewStudent}
-        // pass the real tracking status + reason
-        status={viewStudent ? getStatus(viewStudent) : "Pending by Librarian"}
-        rejectionReason={viewStudent ? getReason(viewStudent) : ""}
-        showLibraryFields={true}
+        currentDepartment="library_staff"
         onClose={() => {
           setViewOpen(false);
           setViewStudent(null);

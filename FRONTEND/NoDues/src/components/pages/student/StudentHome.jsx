@@ -3,12 +3,15 @@ import HowToApply from "./HowToApply";
 
 export default function StudentHome() {
   const navigate = useNavigate();
-  const { email, profileComplete, currentApplication, applications } =
-    useOutletContext();
+  const { email, profileComplete, currentApplication } = useOutletContext();
 
-  const rejectedCount = applications.filter(
-    (app) => app.status === "REJECTED"
-  ).length;
+  const APPLICATION_LABELS = {
+    in_progress: "In Progress",
+    action_required: "On Hold — action required",
+    approved: "Completed — No Dues cleared",
+    submitted: "Submitted",
+  };
+  const isOnHold = currentApplication?.status === "action_required";
 
   return (
     <div className="space-y-6">
@@ -38,13 +41,13 @@ export default function StudentHome() {
         <div className="rounded-2xl border border-white/15 bg-white/5 p-6 text-white">
           <p className="text-sm text-white/60">Apply for No Dues</p>
           <p className="mt-2 text-lg font-semibold">
-            {profileComplete ? "Ready" : "Complete profile first"}
+            {currentApplication ? "Already applied" : profileComplete ? "Ready" : "Complete profile first"}
           </p>
           <button
             type="button"
-            disabled={!profileComplete}
+            disabled={!profileComplete || Boolean(currentApplication)}
             onClick={() => navigate("/student/apply")}
-            className={`mt-4 rounded-xl px-4 py-2 text-sm font-medium text-white ${profileComplete
+            className={`mt-4 rounded-xl px-4 py-2 text-sm font-medium text-white ${profileComplete && !currentApplication
                 ? "bg-blue-600 hover:bg-blue-700"
                 : "cursor-not-allowed bg-blue-600/40"
               }`}
@@ -57,7 +60,7 @@ export default function StudentHome() {
           <p className="text-sm text-white/60">Current Application</p>
           <p className="mt-2 text-lg font-semibold">
             {currentApplication
-              ? currentApplication.currentDepartment
+              ? APPLICATION_LABELS[currentApplication.status] || currentApplication.status
               : "No ongoing application"}
           </p>
           <button
@@ -70,14 +73,16 @@ export default function StudentHome() {
         </div>
 
         <div className="rounded-2xl border border-white/15 bg-white/5 p-6 text-white">
-          <p className="text-sm text-white/60">Applications On Hold</p>
-          <p className="mt-2 text-lg font-semibold">{rejectedCount}</p>
+          <p className="text-sm text-white/60">Application On Hold</p>
+          <p className={`mt-2 text-lg font-semibold ${isOnHold ? "text-red-300" : ""}`}>
+            {isOnHold ? "Yes — please reapply" : "No"}
+          </p>
           <button
             type="button"
-            onClick={() => navigate("/student/history")}
-            className="mt-4 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            onClick={() => navigate(isOnHold ? "/student/track" : "/student/history")}
+            className={`mt-4 rounded-xl px-4 py-2 text-sm font-medium text-white ${isOnHold ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"}`}
           >
-            View History
+            {isOnHold ? "Go to Reapply" : "View History"}
           </button>
         </div>
       </div>
