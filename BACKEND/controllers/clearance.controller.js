@@ -124,6 +124,16 @@ async function getRejected(req, res) { return getStepsByStatus(req, res, 'reject
 
 // ── Approve & Reject ──────────────────────────────────────────────────────────
 
+// Labels of this step's prerequisites that are not approved yet (a held step can be
+// moved to approved only once everything it waits on is approved).
+async function unmetPrerequisites(step) {
+    if (!step.dependsOn || step.dependsOn.length === 0) return [];
+    const siblings = await ClearanceStep.find({ requestId: step.requestId });
+    return siblings
+        .filter(s => step.dependsOn.includes(s.unitCode) && s.status !== 'approved')
+        .map(s => s.unitLabel || s.unitCode);
+}
+
 async function approveStep(req, res) {
     try {
         const { stepId } = req.params;
@@ -135,6 +145,10 @@ async function approveStep(req, res) {
         }
         if (step.status !== 'pending' && step.status !== 'rejected') {
             return res.status(400).json({ error: `Cannot approve step in '${step.status}' state` });
+        }
+        const waitingOn = await unmetPrerequisites(step);
+        if (waitingOn.length > 0) {
+            return res.status(400).json({ error: `Cannot approve yet — still waiting on: ${waitingOn.join(', ')}` });
         }
 
         // Update step
@@ -180,11 +194,23 @@ async function rejectStep(req, res) {
             return res.status(400).json({ error: `Cannot reject step in '${step.status}' state` });
         }
 
+        // A completed application (every department approved) is final
+        const siblings = await ClearanceStep.find({ requestId: step.requestId });
+        if (siblings.length > 0 && siblings.every(s => s.status === 'approved')) {
+            return res.status(400).json({ error: 'This application is already completed by all departments and can no longer be put on hold.' });
+        }
+
+        // Only departments that are actually part of this student's request can be reset
+        const siblingCodes = new Set(siblings.map(s => s.unitCode));
+        const validRestart = Array.isArray(restartFrom)
+            ? restartFrom.filter(code => code !== step.unitCode && siblingCodes.has(code))
+            : [];
+
         // Departments that MUST select at least one upstream dependency to reset.
         // HOD, Store, and Accounts all have optional dep selection — handled on frontend.
         // NAD still enforces mandatory dep selection.
         const DEPENDENT_UNITS = ['nad'];
-        if (DEPENDENT_UNITS.includes(step.unitCode) && (!Array.isArray(restartFrom) || restartFrom.length === 0)) {
+        if (DEPENDENT_UNITS.includes(step.unitCode) && validRestart.length === 0) {
             return res.status(400).json({ error: 'Please select at least one dependent department to reset on reapply' });
         }
 
@@ -194,7 +220,7 @@ async function rejectStep(req, res) {
         step.rejectedAt = new Date();
         step.rejectionReason = reason;
         step.rejectionDescription = description.trim();
-        step.restartFrom = (Array.isArray(restartFrom) && restartFrom.length > 0) ? restartFrom : [];
+        step.restartFrom = validRestart;
         await step.save();
 
         await StepActionLog.create({
@@ -236,6 +262,7 @@ async function bulkApprove(req, res) {
         for (const step of steps) {
             if (!req.hasPermissionFor(step.unitCode)) continue;
             if (step.status !== 'pending' && step.status !== 'rejected') continue;
+            if ((await unmetPrerequisites(step)).length > 0) continue;
 
             step.status = 'approved';
             step.actionBy = req.user.email;

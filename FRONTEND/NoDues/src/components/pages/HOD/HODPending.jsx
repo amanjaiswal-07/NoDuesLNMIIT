@@ -165,6 +165,12 @@ const HOD_DEP_OPTIONS = [
   { value: "physics_lab_optics", label: "Physics Optics Lab" },
 ];
 
+// Kundan's lab is part of ECE requests only — never offer it to reset for other branches
+const hodDepOptionsFor = (student) =>
+  (student?.branch || "").toUpperCase() === "ECE"
+    ? HOD_DEP_OPTIONS
+    : HOD_DEP_OPTIONS.filter((o) => o.value !== "ece_lab_kundan");
+
 export default function HODPending() {
   const { departmentLabel, pending, approveStudent, rejectStudent } =
     useOutletContext();
@@ -223,7 +229,7 @@ export default function HODPending() {
         title="Put HOD Clearance"
         confirmText="Confirm Hold"
         placeholder="Specify which clearance is pending and why the HOD cannot approve yet…"
-        dependencyOptions={HOD_DEP_OPTIONS}
+        dependencyOptions={hodDepOptionsFor(selectedStudent)}
         dependenciesRequired={false}
       />
 

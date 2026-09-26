@@ -132,6 +132,7 @@ async function relockDependents(requestId) {
         for (const step of allSteps) {
             if (step.status === 'approved') continue; // approved stays approved
             if (step.status === 'locked') continue;   // already locked
+            if (step.status === 'rejected') continue; // keep an existing hold (and its reason) — reapply resets it
             if (toRelock.has(step.unitCode)) continue; // already queued
             if (step.dependsOn.length === 0) continue; // no deps, never lock from here
 

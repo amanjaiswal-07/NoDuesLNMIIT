@@ -101,24 +101,34 @@ export default function useDepartmentData(unitCodes) {
 
     useEffect(() => { fetchAll(); }, [fetchAll]);
 
-    /** Approve a single step */
-    const approveStep = useCallback(async (item) => {
-        await api.post(`/clearance/${item.stepId}/approve`);
-        await fetchAll();
+    /** Run an action; if the server refuses it, tell the user why, then reload the lists */
+    const runAction = useCallback(async (label, call) => {
+        try {
+            await call();
+        } catch (err) {
+            window.alert(`${label}: ${err.response?.data?.error || "Something went wrong. Please try again."}`);
+        } finally {
+            await fetchAll();
+        }
     }, [fetchAll]);
+
+    /** Approve a single step */
+    const approveStep = useCallback((item) =>
+        runAction(`Could not approve ${item.name || "this request"}`, () =>
+            api.post(`/clearance/${item.stepId}/approve`)),
+    [runAction]);
 
     /** Approve multiple steps at once */
-    const bulkApprove = useCallback(async (items) => {
-        const stepIds = items.map((i) => i.stepId);
-        await api.post("/clearance/bulk-approve", { stepIds });
-        await fetchAll();
-    }, [fetchAll]);
+    const bulkApprove = useCallback((items) =>
+        runAction("Could not approve the selected requests", () =>
+            api.post("/clearance/bulk-approve", { stepIds: items.map((i) => i.stepId) })),
+    [runAction]);
 
     /** Reject a single step with a reason, description, and optional restartFrom array */
-    const rejectStep = useCallback(async (item, reason, description, restartFrom) => {
-        await api.post(`/clearance/${item.stepId}/reject`, { reason, description, restartFrom: restartFrom || [] });
-        await fetchAll();
-    }, [fetchAll]);
+    const rejectStep = useCallback((item, reason, description, restartFrom) =>
+        runAction(`Could not put ${item.name || "this request"} on hold`, () =>
+            api.post(`/clearance/${item.stepId}/reject`, { reason, description, restartFrom: restartFrom || [] })),
+    [runAction]);
 
     return {
         pending,
