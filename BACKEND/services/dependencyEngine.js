@@ -29,10 +29,13 @@ async function unlockDependents(requestId) {
         statusMap[step.unitCode] = step.status;
     }
 
-    // Find locked steps whose dependencies are ALL approved
+    // Find locked steps whose dependencies are ALL approved. A step re-locked by a reapply
+    // also waits for the departments it asked to reset (kept in restartFrom), even when
+    // those are not direct prerequisites (e.g. Accounts resetting a lab).
     const stepsToUnlock = allSteps.filter(step => {
         if (step.status !== 'locked') return false;
-        return step.dependsOn.every(dep => statusMap[dep] === 'approved');
+        const waitingOn = [...step.dependsOn, ...(step.restartFrom || [])].filter(code => code in statusMap);
+        return waitingOn.every(dep => statusMap[dep] === 'approved');
     });
 
     if (stepsToUnlock.length === 0) {
@@ -47,7 +50,7 @@ async function unlockDependents(requestId) {
     // Unlock them all at once
     await ClearanceStep.updateMany(
         { _id: { $in: unlockedIds } },
-        { $set: { status: 'pending' } }
+        { $set: { status: 'pending', restartFrom: [] } }
     );
 
     // Log the unlocking events

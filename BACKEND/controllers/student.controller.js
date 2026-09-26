@@ -639,10 +639,24 @@ async function reapply(req, res) {
         // Collect all unit codes that should go back to 'locked' (re-locked because their prerequisite is being reset)
         const toRelock = new Set();
 
+        const siblingCodes = new Set(allSteps.map(s => s.unitCode));
+        // Departments a re-locked step must wait for before it comes back (its reset choice)
+        const waitFor = {};
+        // Why each department is being reset by someone else's hold — shown in its timeline
+        const resetBy = {};
+
         for (const step of rejectedSteps) {
-            if (step.restartFrom && step.restartFrom.length > 0) {
+            const restart = (step.restartFrom || []).filter(code => siblingCodes.has(code) && code !== step.unitCode);
+            if (restart.length > 0) {
                 // HOD / NAD / Store / Accounts specified which upstream deps to restart
-                step.restartFrom.forEach(code => toResetPending.add(code));
+                restart.forEach(code => {
+                    toResetPending.add(code);
+                    // snapshot now — the holder's reason is cleared when it is re-locked below
+                    (resetBy[code] = resetBy[code] || []).push(
+                        `${step.unitLabel || step.unitCode} put the application on hold ([${step.rejectionReason}] ${step.rejectionDescription})`
+                    );
+                });
+                waitFor[step.unitCode] = restart;
                 // The rejected step itself goes back to locked (it will unlock naturally when deps re-approve)
                 toRelock.add(step.unitCode);
             } else {
@@ -682,9 +696,17 @@ async function reapply(req, res) {
             });
         }
 
+        // A step that must wait (re-locked) is never also reset to pending
+        for (const code of toRelock) toResetPending.delete(code);
+
         // Apply resets
         for (const s of allSteps) {
             if (toResetPending.has(s.unitCode)) {
+                const holders = resetBy[s.unitCode] || [];
+                const note = holders.length > 0
+                    ? `Reset because ${holders.join('; ')}.`
+                        + (comment ? ` Student's comment: ${comment}` : '')
+                    : 'Reset by student reapply';
                 s.status = 'pending';
                 // Clear old rejection data so the step looks fresh to the department
                 s.rejectionReason = '';
@@ -694,13 +716,17 @@ async function reapply(req, res) {
                 s.actionBy = '';
                 s.actionAt = undefined;
                 await s.save();
-                logs.push({ stepId: s._id, requestId: request._id, action: 'reopened', actorEmail: 'system', actorRole: 'system', note: 'Reset by student reapply' });
+                logs.push({
+                    stepId: s._id, requestId: request._id, action: 'reopened', actorEmail: 'system', actorRole: 'system', note,
+                    // departments reset by another department's hold also get the student's document
+                    proofUrls: holders.length > 0 && proofUrl ? [proofUrl] : [],
+                });
             } else if (toRelock.has(s.unitCode)) {
                 s.status = 'locked';
                 s.rejectionReason = '';
                 s.rejectionDescription = '';
                 s.rejectedAt = undefined;
-                s.restartFrom = [];
+                s.restartFrom = waitFor[s.unitCode] || []; // unlocks only after these are approved again
                 s.actionBy = '';
                 s.actionAt = undefined;
                 await s.save();

@@ -155,6 +155,7 @@ async function approveStep(req, res) {
         step.status = 'approved';
         step.actionBy = req.user.email;
         step.actionAt = new Date();
+        step.restartFrom = []; // a hold's reset choice no longer applies once approved
         await step.save();
 
         // Log action
@@ -200,10 +201,19 @@ async function rejectStep(req, res) {
             return res.status(400).json({ error: 'This application is already completed by all departments and can no longer be put on hold.' });
         }
 
-        // Only departments that are actually part of this student's request can be reset
-        const siblingCodes = new Set(siblings.map(s => s.unitCode));
+        // Only departments this step (directly or indirectly) waits on, and that are part of this
+        // student's request, can be reset — resetting a later department would deadlock the chain.
+        const depsByCode = Object.fromEntries(siblings.map(s => [s.unitCode, s.dependsOn || []]));
+        const upstream = new Set();
+        const stack = [...(depsByCode[step.unitCode] || step.dependsOn || [])];
+        while (stack.length) {
+            const code = stack.pop();
+            if (upstream.has(code) || !(code in depsByCode)) continue;
+            upstream.add(code);
+            stack.push(...depsByCode[code]);
+        }
         const validRestart = Array.isArray(restartFrom)
-            ? restartFrom.filter(code => code !== step.unitCode && siblingCodes.has(code))
+            ? [...new Set(restartFrom)].filter(code => upstream.has(code))
             : [];
 
         // Departments that MUST select at least one upstream dependency to reset.
@@ -267,6 +277,7 @@ async function bulkApprove(req, res) {
             step.status = 'approved';
             step.actionBy = req.user.email;
             step.actionAt = new Date();
+            step.restartFrom = [];
             await step.save();
 
             await StepActionLog.create({

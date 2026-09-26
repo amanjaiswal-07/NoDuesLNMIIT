@@ -209,6 +209,9 @@ function Timeline({ logs, stepId, onOpenFile }) {
                 {log.note?.trim() ? log.note : <span className="italic text-white/30">No comment provided.</span>}
               </p>
             )}
+            {log.action === "reopened" && log.note && log.note !== "Reset by student reapply" && (
+              <p className="mt-1.5 whitespace-pre-wrap text-xs text-amber-100/80">{log.note}</p>
+            )}
             {log.proofCount > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {Array.from({ length: log.proofCount }, (_, i) => (
@@ -377,7 +380,9 @@ export default function ViewDetailsModal({ open, student, currentDepartment, onC
   const currentStatus = step?.status || student?.status || "pending";
   const appStatus = APPLICATION_STATUS[requestInfo?.status];
 
-  const prerequisites = allSteps.filter((s) => (step?.dependsOn || []).includes(s.unitCode));
+  // Direct prerequisites, plus any departments this step asked to reset and is waiting on
+  const waitingCodes = [...(step?.dependsOn || []), ...(step?.restartFrom || [])];
+  const prerequisites = allSteps.filter((s) => waitingCodes.includes(s.unitCode));
   const holdLogs = stepLogs.filter((l) => l.action === "rejected");
   const reapplyLogs = stepLogs.filter((l) => l.action === "reapply" || l.action === "student_replied");
   const deptSection = DEPT_SECTIONS[department];
