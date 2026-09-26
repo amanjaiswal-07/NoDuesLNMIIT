@@ -62,7 +62,7 @@ export default function DepartmentAccessManager({ currentRoute }) {
 
   useEffect(() => {
     fetchAccessList();
-  }, [currentRoute, unitCode]);
+  }, [currentRoute, unitCode]); // eslint-disable-line react-hooks/exhaustive-deps -- refetch only when the department changes
 
   const resetForm = () => {
     setFormData({

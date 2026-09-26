@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
 /**
@@ -18,8 +18,13 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
  *   dependencyOptions — null | [{ value: unitCode, label: string }]
  *                       When non-null, shows a multi-select panel for HOD / NAD / etc.
  */
-export default function RejectModal({
-  open,
+export default function RejectModal(props) {
+  if (!props.open) return null;
+  // Mounted fresh each time it opens (or the student changes), so the form always starts empty
+  return <RejectModalBody key={props.student?.id ?? props.student?.stepId ?? "none"} {...props} />;
+}
+
+function RejectModalBody({
   student,
   onClose,
   onConfirm,
@@ -37,16 +42,6 @@ export default function RejectModal({
   const [restartFrom, setRestartFrom] = useState([]);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (open) {
-      setSelected("");
-      setDescription("");
-      setRestartFrom([]);
-      setError("");
-    }
-  }, [open, student?.id]);
-
-  if (!open) return null;
 
   const hasDepOptions = dependencyOptions && dependencyOptions.length > 0;
   const canConfirm = selected !== "" && description.trim().length > 0

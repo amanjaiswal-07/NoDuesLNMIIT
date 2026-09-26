@@ -523,7 +523,7 @@ export default function StudentTrack() {
     try {
       const logsRes = await api.get(`/student/request/${currentApplication._id}/logs`);
       setLogs(logsRes.data.logs || []);
-    } catch (_logErr) {
+    } catch {
       // Silent — timeline degrades gracefully to empty, no error shown.
     }
 
@@ -603,7 +603,7 @@ export default function StudentTrack() {
                 if (refreshStudentData) await refreshStudentData();
                 // Step 2: Re-fetch steps + logs for the track timeline
                 await fetchSteps();
-              } catch (_) {
+              } catch {
                 // Errors handled inside fetchSteps — nothing to do here
               } finally {
                 setRefreshing(false);

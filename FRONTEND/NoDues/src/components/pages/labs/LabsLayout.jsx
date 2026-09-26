@@ -7,7 +7,7 @@
  *
  * Route: /labs/:department  (e.g. /labs/cse-cce, /labs/mech)
  */
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, Outlet } from "react-router-dom";
 import DepartmentLayout from "../../shared/DepartmentLayout";
 
@@ -87,12 +87,10 @@ export default function LabsLayout() {
   const config = DEPARTMENT_CONFIG[department] || DEPARTMENT_CONFIG["cse-cce"];
   const LABS = LABS_BY_DEPARTMENT[department] || [];
 
-  const [selectedLab, setSelectedLab] = useState("");
-
-  // Reset selected lab when department changes in URL
-  useEffect(() => {
-    setSelectedLab("");
-  }, [department]);
+  // The picked lab belongs to one lab group; switching group in the URL starts with none selected
+  const [pick, setPick] = useState({ department, lab: "" });
+  const selectedLab = pick.department === department ? pick.lab : "";
+  const setSelectedLab = (lab) => setPick({ department, lab });
 
   return (
     <DepartmentLayout

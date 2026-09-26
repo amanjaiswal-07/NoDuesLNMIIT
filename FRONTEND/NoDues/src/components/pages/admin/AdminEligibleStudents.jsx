@@ -434,7 +434,7 @@ export default function AdminEligibleStudents() {
               {filteredStudents.length === 0 && (
                 <tr>
                   <td colSpan="6" className="px-5 py-8 text-center text-sm text-white/50">
-                    No eligible students found.
+                    {isLoading ? "Loading students…" : "No eligible students found."}
                   </td>
                 </tr>
               )}

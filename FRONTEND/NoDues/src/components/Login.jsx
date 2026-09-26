@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useLayoutEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
@@ -38,6 +38,19 @@ const Login = () => {
   const [role, setRole] = useState("student");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Google's button only accepts a pixel width (max 400), so match it to the card's width
+  const buttonBoxRef = useRef(null);
+  const [buttonWidth, setButtonWidth] = useState(360);
+  useLayoutEffect(() => {
+    const box = buttonBoxRef.current;
+    if (!box) return;
+    const update = () => setButtonWidth(Math.min(400, Math.max(200, Math.floor(box.clientWidth))));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, []);
 
   const handleGoogleSuccess = async (credentialResponse) => {
     setIsLoading(true);
@@ -95,7 +108,8 @@ const Login = () => {
 
         {/* Dynamic Error State Notification */}
         {error && (
-          <div className="w-full mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center justify-center">
+          <div className="w-full mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center justify-center gap-2">
+            <ExclamationTriangleIcon className="h-5 w-5 shrink-0 text-red-500" />
             <span className="text-sm text-red-600 font-medium">{error}</span>
           </div>
         )}
@@ -123,28 +137,21 @@ const Login = () => {
           </div>
 
           {/* Core Interactive Login Button */}
-          <div className="w-full">
+          <div ref={buttonBoxRef} className="flex min-h-[44px] w-full items-center justify-center">
             {isLoading ? (
-              <div className="flex justify-center py-2">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-              </div>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
             ) : (
-              <div className="w-full flex justify-center">
-                <div className="w-full">
-                  <div className="rounded-full overflow-hidden shadow-md hover:shadow-lg transition-all duration-200">
-                    <GoogleLogin
-                      onSuccess={handleGoogleSuccess}
-                      onError={handleGoogleError}
-                      useOneTap
-                      theme="filled_blue"
-                      size="large"
-                      shape="pill"
-                      text="continue_with"
-                      width="100%"
-                    />
-                  </div>
-                </div>
-              </div>
+              <GoogleLogin
+                key={buttonWidth}
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                useOneTap
+                theme="filled_blue"
+                size="large"
+                shape="pill"
+                text="continue_with"
+                width={String(buttonWidth)}
+              />
             )}
           </div>
         </div>

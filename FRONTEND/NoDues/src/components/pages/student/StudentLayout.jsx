@@ -84,7 +84,7 @@ export default function StudentLayout() {
       return;
     }
     fetchStudentData();
-  }, [email, navigate]);
+  }, [email, navigate]); // eslint-disable-line react-hooks/exhaustive-deps -- load once per signed-in student
 
   // Exposed to child routes via context — awaitable so Track can chain its own refetch.
   const refreshStudentData = async () => {

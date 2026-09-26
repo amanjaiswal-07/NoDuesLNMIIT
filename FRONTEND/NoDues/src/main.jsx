@@ -238,6 +238,9 @@ const router = createBrowserRouter(
         </Route>
 
       </Route>
+
+      {/* Unknown address → back to the login page instead of the router's error screen */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Route>
   )
 );

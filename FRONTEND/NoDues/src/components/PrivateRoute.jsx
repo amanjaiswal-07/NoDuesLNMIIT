@@ -67,7 +67,7 @@ const PrivateRoute = () => {
 
         // Unrecognized / Unauthorized traversal attempts default aggressively back to user's home state instance
         return <Navigate to={user.redirectRoute || '/'} replace />;
-    } catch (err) {
+    } catch {
         return <Navigate to="/" replace />;
     }
 };

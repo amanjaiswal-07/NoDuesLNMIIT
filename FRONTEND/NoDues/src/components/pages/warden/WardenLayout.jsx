@@ -3,7 +3,7 @@ import { Outlet } from "react-router-dom";
 import DepartmentLayout from "../../shared/DepartmentLayout";
 
 // Extracted from original WardenLayout logic
-export const HOSTELS = ["BH1", "BH2", "BH3", "BH4", "BH5", "GH"];
+const HOSTELS = ["BH1", "BH2", "BH3", "BH4", "BH5", "GH"];
 
 export default function WardenLayout() {
   const [selectedHostel, setSelectedHostel] = useState("");
