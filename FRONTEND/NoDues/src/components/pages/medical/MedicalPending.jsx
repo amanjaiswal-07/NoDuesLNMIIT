@@ -1,3 +1,9 @@
+/**
+ * MedicalPending.jsx — Medical Officer "Pending Requests" tab. Students waiting for Medical Officer's clearance.
+ * Approve (one or selected), Put On Hold (reason + mandatory details, shown to the student) or open
+ * View details (student info, timeline, prerequisites and the documents Medical Officer needs).
+ */
+
 // import { useState } from "react";
 // import { useOutletContext } from "react-router-dom";
 

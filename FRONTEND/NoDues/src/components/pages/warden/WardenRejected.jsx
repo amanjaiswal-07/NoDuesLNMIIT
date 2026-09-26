@@ -1,3 +1,10 @@
+/**
+ * WardenRejected.jsx — Warden In Charge "Requests On Hold" tab. Students Warden In Charge put on hold; they stay here until the
+ * student fixes the issue and reapplies. "Move to Approved" clears them directly (only if every
+ * prerequisite is already approved).
+ * Lists are filtered by the hostel chosen on the Warden home page.
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

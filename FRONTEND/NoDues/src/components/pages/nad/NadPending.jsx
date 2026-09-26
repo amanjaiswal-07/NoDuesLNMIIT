@@ -1,3 +1,10 @@
+/**
+ * NadPending.jsx — NAD Cell "Pending Requests" tab. Students waiting for NAD Cell's clearance.
+ * Approve (one or selected), Put On Hold (reason + mandatory details, shown to the student) or open
+ * View details (student info, timeline, prerequisites and the documents NAD Cell needs).
+ * NAD waits for the student's HOD. Putting a request on hold requires choosing the HOD to reset on reapply.
+ */
+
 // import { useState } from "react";
 // import { useOutletContext } from "react-router-dom";
 

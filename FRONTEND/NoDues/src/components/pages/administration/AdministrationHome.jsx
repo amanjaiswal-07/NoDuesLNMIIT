@@ -1,3 +1,8 @@
+/**
+ * AdministrationHome.jsx — Administration home page (/administration): pending count and the Department Access table where
+ * Administration staff manage who may open this section.
+ */
+
 // import { useOutletContext } from "react-router-dom";
 // import DepartmentHome from "../../Home/DepartmentHome";
 

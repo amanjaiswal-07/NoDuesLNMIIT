@@ -1,3 +1,10 @@
+/**
+ * multer.js — file-upload middleware used by the student routes (profile documents,
+ * reapply proof). Files stream straight to Cloudinary: PDFs as 'raw', images as 'image'.
+ * Security limits: only real PDF / JPG / PNG files (MIME type AND extension must match),
+ * at most 10 MB each and 10 files per request. Anything else is rejected with a 400.
+ */
+
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('./cloudinary');
@@ -28,6 +35,9 @@ const ALLOWED = {
     'image/jpeg': ['.jpg', '.jpeg'],
     'image/png': ['.png'],
 };
+/**
+ * Accepts only PDF / JPG / PNG files whose type and extension agree.
+ */
 function fileFilter(req, file, cb) {
     const name = (file.originalname || '').toLowerCase();
     const exts = ALLOWED[file.mimetype];

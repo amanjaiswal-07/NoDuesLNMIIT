@@ -1,3 +1,8 @@
+/**
+ * StudentApply.jsx — submit the No Dues application (/student/apply) once the profile is complete.
+ * The backend then creates one clearance step per department for this student's branch.
+ */
+
 import { useOutletContext } from "react-router-dom";
 import ConfirmModal from "../../Modal/ConfirmModal";
 import { useState, useEffect } from "react";

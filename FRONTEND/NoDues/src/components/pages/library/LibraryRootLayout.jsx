@@ -1,3 +1,8 @@
+/**
+ * LibraryRootLayout.jsx — parent route for /library/staff and /library/librarian; each child
+ * layout loads its own data.
+ */
+
 import { Outlet } from "react-router-dom";
 
 // Parent route for /library/staff and /library/librarian.

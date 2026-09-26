@@ -1,3 +1,9 @@
+/**
+ * PlacementApproved.jsx — Placement Office "Approved Requests" tab. Students Placement Office has cleared; one can be moved back
+ * to On Hold with a reason (not once the whole application is complete — the backend refuses).
+ * Placement sees the student's placement status, TPC email date and placement documents.
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

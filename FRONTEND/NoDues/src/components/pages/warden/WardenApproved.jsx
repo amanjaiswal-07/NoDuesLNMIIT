@@ -1,3 +1,9 @@
+/**
+ * WardenApproved.jsx — Warden In Charge "Approved Requests" tab. Students Warden In Charge has cleared; one can be moved back
+ * to On Hold with a reason (not once the whole application is complete — the backend refuses).
+ * Lists are filtered by the hostel chosen on the Warden home page.
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

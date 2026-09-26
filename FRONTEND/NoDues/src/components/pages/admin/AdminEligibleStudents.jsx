@@ -1,3 +1,9 @@
+/**
+ * AdminEligibleStudents.jsx — manage who may apply (/admin/eligible-students): add / edit / remove
+ * students, select and bulk-remove, and import a CSV (rows with an unknown branch or duplicates are
+ * skipped and listed in the result message).
+ */
+
 import { useRef, useState, useEffect } from "react";
 import Papa from "papaparse";
 import { ArrowDownTrayIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";

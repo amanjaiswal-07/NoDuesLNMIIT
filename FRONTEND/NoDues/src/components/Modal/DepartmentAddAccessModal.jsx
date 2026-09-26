@@ -1,3 +1,7 @@
+/**
+ * DepartmentAddAccessModal.jsx — department staff dialog to add an email ID to their own department.
+ */
+
 export default function DepartmentAddAccessModal({
   isOpen,
   formData,

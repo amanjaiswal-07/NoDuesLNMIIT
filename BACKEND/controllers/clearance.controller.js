@@ -1,3 +1,19 @@
+/**
+ * clearance.controller.js — the department side of the workflow (/api/clearance).
+ * Every handler checks req.hasPermissionFor(step.unitCode) so a department only sees and acts on
+ * its own steps.
+ *   • Lists: getPending / getApproved / getRejected (by unitCode); Library Staff's list also carries
+ *     the Librarian's status for the "Sent" tab.
+ *   • Actions: approveStep, bulkApprove (only when all prerequisites are approved), rejectStep
+ *     ("Put on hold": reason + details + optional departments to reset on reapply; resets are limited
+ *     to the step's own earlier prerequisites, and a fully completed application can't be put on hold).
+ *     After each action the dependency engine unlocks / re-locks other steps.
+ *   • Details: getStepFull feeds the "View details" modal — common student info for everyone plus only
+ *     the fields/documents that department needs (DEPT_PROFILE_ACCESS); raw file URLs never leave the
+ *     server. getStepFile / getLogProof stream documents through the backend.
+ *   • Department access: staff of a department (or admin) can add / edit / remove who may use it.
+ */
+
 const ClearanceStep = require('../models/ClearanceStep');
 const StepActionLog = require('../models/StepActionLog');
 const NoDuesRequest = require('../models/NoDuesRequest');
@@ -118,8 +134,17 @@ async function getStepsByStatus(req, res, status) {
     }
 }
 
+/**
+ * GET /api/clearance/pending?unitCode=… — steps waiting for this department.
+ */
 async function getPending(req, res) { return getStepsByStatus(req, res, 'pending'); }
+/**
+ * GET /api/clearance/approved?unitCode=… — steps this department approved.
+ */
 async function getApproved(req, res) { return getStepsByStatus(req, res, 'approved'); }
+/**
+ * GET /api/clearance/rejected?unitCode=… — steps this department put on hold.
+ */
 async function getRejected(req, res) { return getStepsByStatus(req, res, 'rejected'); }
 
 // ── Approve & Reject ──────────────────────────────────────────────────────────
@@ -134,6 +159,11 @@ async function unmetPrerequisites(step) {
         .map(s => s.unitLabel || s.unitCode);
 }
 
+/**
+ * POST /api/clearance/:stepId/approve
+ * Approves a pending or on-hold step — only when every prerequisite is approved — logs it, then
+ * runs the dependency engine so the next departments unlock (and the request completes when all are done).
+ */
 async function approveStep(req, res) {
     try {
         const { stepId } = req.params;
@@ -176,6 +206,13 @@ async function approveStep(req, res) {
     }
 }
 
+/**
+ * POST /api/clearance/:stepId/reject  (body: reason, description, restartFrom[])
+ * "Put on hold". Refused for locked steps, steps already on hold, and fully completed applications.
+ * restartFrom is trimmed to this step's own earlier prerequisites that exist for this student
+ * (anything else could deadlock the chain). The request becomes action_required and any
+ * pending step that depended on this one is locked again.
+ */
 async function rejectStep(req, res) {
     try {
         const { stepId } = req.params;
@@ -258,6 +295,10 @@ async function rejectStep(req, res) {
     }
 }
 
+/**
+ * POST /api/clearance/bulk-approve  (body: stepIds[])
+ * Approves each selected step this user may act on, skipping steps whose prerequisites are not approved.
+ */
 async function bulkApprove(req, res) {
     try {
         const { stepIds } = req.body;
@@ -422,6 +463,9 @@ function checkManageableUnit(req, res, unitCode) {
     return true;
 }
 
+/**
+ * GET /api/clearance/:unitCode/access — people who can open this department.
+ */
 async function getDepartmentAccess(req, res) {
     try {
         const { unitCode } = req.params;
@@ -435,6 +479,10 @@ async function getDepartmentAccess(req, res) {
     }
 }
 
+/**
+ * POST /api/clearance/:unitCode/access — give an email access to this department
+ * (creates the User if needed, otherwise adds the permission code).
+ */
 async function addDepartmentAccess(req, res) {
     try {
         const { unitCode } = req.params;
@@ -469,6 +517,10 @@ async function addDepartmentAccess(req, res) {
     }
 }
 
+/**
+ * PUT /api/clearance/:unitCode/access/:userId — rename / change the email of someone in this
+ * department. Non-admins cannot edit people who also belong to other sections.
+ */
 async function editDepartmentAccess(req, res) {
     try {
         const { unitCode, userId } = req.params;
@@ -509,6 +561,10 @@ async function editDepartmentAccess(req, res) {
     }
 }
 
+/**
+ * DELETE /api/clearance/:unitCode/access/:userId — remove this department's code from a user
+ * (the user is deleted when no codes are left).
+ */
 async function removeDepartmentAccess(req, res) {
     try {
         const { unitCode, userId } = req.params;
@@ -547,6 +603,10 @@ const FILE_FIELD_MAP = {
     cancelledChequeFile: 'cancelledChequeFileUrl',
 };
 
+/**
+ * Downloads a stored file (Cloudinary) following up to a few redirects, so it can be streamed
+ * to the browser without exposing the storage URL.
+ */
 async function fetchFollowingRedirects(url, depth = 0) {
     if (depth > 5) throw new Error('Too many redirects');
     const https = require('https');

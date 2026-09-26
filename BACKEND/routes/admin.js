@@ -1,3 +1,8 @@
+/**
+ * admin.js routes — /api/admin. Every route requires a valid token AND the 'admin' permission.
+ * Eligible students, staff access, dashboard numbers/details and the applications overview.
+ */
+
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middleware/verifyToken');

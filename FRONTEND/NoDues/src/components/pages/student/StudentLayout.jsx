@@ -1,3 +1,10 @@
+/**
+ * StudentLayout.jsx — frame of the student portal (/student/*).
+ * Loads the student's profile and current application once and shares them with every student page
+ * (Outlet context, plus refreshStudentData to reload). Header: brand, Dashboard / Profile / Apply /
+ * Track tabs and Logout (tabs scroll sideways on phones). Non-student tokens are sent back to login.
+ */
+
 import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
 import {
   HomeIcon,

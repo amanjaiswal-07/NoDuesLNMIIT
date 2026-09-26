@@ -1,3 +1,7 @@
+/**
+ * BulkRemoveEligibleStudentModal.jsx — confirmation before removing all selected students from the eligible list.
+ */
+
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 
 export default function BulkRemoveEligibleStudentModal({

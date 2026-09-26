@@ -25,6 +25,9 @@ function normalizeBranch(branch) {
     return String(branch || '').trim().toUpperCase();
 }
 
+/**
+ * True when the branch is one we know how to route (has an HOD).
+ */
 function isValidBranch(branch) {
     return Object.prototype.hasOwnProperty.call(BRANCH_TO_HOD, normalizeBranch(branch));
 }

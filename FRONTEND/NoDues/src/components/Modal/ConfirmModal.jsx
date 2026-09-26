@@ -1,3 +1,8 @@
+/**
+ * ConfirmModal.jsx — generic "Are you sure?" dialog (title, message, confirm/cancel) used before
+ * approvals and other actions.
+ */
+
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
 export default function ConfirmModal({

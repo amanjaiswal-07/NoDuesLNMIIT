@@ -1,3 +1,10 @@
+/**
+ * AccountsRejected.jsx — Accounts "Requests On Hold" tab. Students Accounts put on hold; they stay here until the
+ * student fixes the issue and reapplies. "Move to Approved" clears them directly (only if every
+ * prerequisite is already approved).
+ * Accounts is the final step and sees the refund / bank details and cancelled cheque. When putting on hold it may reset any earlier department (labs included); on reapply Accounts waits until all of them approve again.
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

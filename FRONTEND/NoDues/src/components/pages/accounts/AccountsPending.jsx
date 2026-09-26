@@ -1,3 +1,10 @@
+/**
+ * AccountsPending.jsx — Accounts "Pending Requests" tab. Students waiting for Accounts's clearance.
+ * Approve (one or selected), Put On Hold (reason + mandatory details, shown to the student) or open
+ * View details (student info, timeline, prerequisites and the documents Accounts needs).
+ * Accounts is the final step and sees the refund / bank details and cancelled cheque. When putting on hold it may reset any earlier department (labs included); on reapply Accounts waits until all of them approve again.
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

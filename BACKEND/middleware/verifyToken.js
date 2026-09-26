@@ -1,3 +1,8 @@
+/**
+ * verifyToken.js — runs before every protected API route: checks the JWT and loads the user's
+ * current permissions from the database (details below).
+ */
+
 const { verifyToken: verify } = require('../utils/jwt');
 const User = require('../models/User');
 const EligibleStudent = require('../models/EligibleStudent');

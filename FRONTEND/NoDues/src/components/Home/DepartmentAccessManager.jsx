@@ -1,3 +1,10 @@
+/**
+ * DepartmentAccessManager.jsx — "Department Access" table on each department's home page.
+ * Lets that department's staff (and admins) add, rename or remove the email IDs that can open this
+ * department. The backend only allows changes to people of this department, and refuses to rename
+ * someone who also belongs to other sections (only an admin can).
+ */
+
 import { useState, useEffect } from "react";
 import api from "../../api/client";
 import DepartmentAddAccessModal from "../Modal/DepartmentAddAccessModal";

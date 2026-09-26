@@ -1,3 +1,10 @@
+/**
+ * LibraryLibrarianRejected.jsx — Central Library - Librarian "Requests On Hold" tab. Students Central Library - Librarian put on hold; they stay here until the
+ * student fixes the issue and reapplies. "Move to Approved" clears them directly (only if every
+ * prerequisite is already approved).
+ * Second library step (after Library Staff). A Librarian hold restarts the library chain from Library Staff on reapply.
+ */
+
 import { useOutletContext } from "react-router-dom";
 import { useState } from "react";
 import RejectedRequests from "../../Request/RejectedRequests";

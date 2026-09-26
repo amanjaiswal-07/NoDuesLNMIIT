@@ -1,3 +1,9 @@
+/**
+ * clearance.js routes — /api/clearance, used by department dashboards.
+ * Student tokens are refused outright; attachPermissionChecker gives each handler
+ * req.hasPermissionFor(unitCode) so a department can only touch its own steps.
+ */
+
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middleware/verifyToken');

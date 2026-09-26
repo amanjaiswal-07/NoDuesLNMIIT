@@ -1,3 +1,10 @@
+/**
+ * HODPending.jsx — Head of Department "Pending Requests" tab. Students waiting for Head of Department's clearance.
+ * Approve (one or selected), Put On Hold (reason + mandatory details, shown to the student) or open
+ * View details (student info, timeline, prerequisites and the documents Head of Department needs).
+ * A student's request goes only to their own branch HOD, after all their labs, LUCS and the Librarian approved. When putting on hold the HOD may reset specific labs, LUCS or Library on reapply.
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

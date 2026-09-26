@@ -1,3 +1,8 @@
+/**
+ * MedicalHome.jsx — Medical Officer home page (/medical): pending count and the Department Access table where
+ * Medical Officer staff manage who may open this section.
+ */
+
 // import DepartmentHome from "../../Home/DepartmentHome.jsx";
 // import { useOutletContext } from "react-router-dom";
 

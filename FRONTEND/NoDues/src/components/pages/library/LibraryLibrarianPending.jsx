@@ -1,3 +1,10 @@
+/**
+ * LibraryLibrarianPending.jsx — Central Library - Librarian "Pending Requests" tab. Students waiting for Central Library - Librarian's clearance.
+ * Approve (one or selected), Put On Hold (reason + mandatory details, shown to the student) or open
+ * View details (student info, timeline, prerequisites and the documents Central Library - Librarian needs).
+ * Second library step (after Library Staff). A Librarian hold restarts the library chain from Library Staff on reapply.
+ */
+
 import { useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import PendingRequests from "../../Request/PendingRequests";

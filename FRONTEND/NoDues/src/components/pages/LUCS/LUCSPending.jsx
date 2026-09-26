@@ -1,3 +1,9 @@
+/**
+ * LUCSPending.jsx — LUCS "Pending Requests" tab. Students waiting for LUCS's clearance.
+ * Approve (one or selected), Put On Hold (reason + mandatory details, shown to the student) or open
+ * View details (student info, timeline, prerequisites and the documents LUCS needs).
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

@@ -1,3 +1,7 @@
+/**
+ * EditAccessModal.jsx — admin dialog to change a staff member's name, email or section.
+ */
+
 export default function EditAccessModal({
   isOpen,
   formData,

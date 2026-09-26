@@ -1,3 +1,14 @@
+/**
+ * auth.controller.js — Google sign-in.
+ * POST /api/auth/google receives the Google ID token plus the role picked on the login page:
+ *   • student → must be on the EligibleStudent list; a User record with the 'student' code is
+ *     created/updated and a token with role 'student' is issued (redirect /student)
+ *   • staff/admin → the User must already hold the selected permission code (added by an admin
+ *     or by that department's staff); the token's redirectRoute comes from PERMISSION_TO_ROUTE
+ * GET /api/auth/me returns the signed-in user. Permissions inside the token are informational
+ * only — middleware/verifyToken.js re-reads them from the database on every request.
+ */
+
 const { verifyGoogleToken } = require('../utils/googleAuth');
 const { signToken } = require('../utils/jwt');
 const User = require('../models/User');

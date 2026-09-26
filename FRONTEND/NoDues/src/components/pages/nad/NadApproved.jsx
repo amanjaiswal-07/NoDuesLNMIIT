@@ -1,3 +1,9 @@
+/**
+ * NadApproved.jsx — NAD Cell "Approved Requests" tab. Students NAD Cell has cleared; one can be moved back
+ * to On Hold with a reason (not once the whole application is complete — the backend refuses).
+ * NAD waits for the student's HOD. Putting a request on hold requires choosing the HOD to reset on reapply.
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

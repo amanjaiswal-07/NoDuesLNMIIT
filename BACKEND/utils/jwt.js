@@ -1,3 +1,9 @@
+/**
+ * jwt.js — signs and verifies our own login tokens (JSON Web Tokens) with JWT_SECRET.
+ * The secret must be long and random: anyone who knows it could forge an admin token. A warning is
+ * logged at startup when it is shorter than 32 characters.
+ */
+
 const jwt = require('jsonwebtoken');
 
 const SECRET = process.env.JWT_SECRET;

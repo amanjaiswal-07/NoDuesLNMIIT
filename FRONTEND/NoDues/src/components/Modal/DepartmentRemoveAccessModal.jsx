@@ -1,3 +1,7 @@
+/**
+ * DepartmentRemoveAccessModal.jsx — confirmation before removing someone from this department's access list.
+ */
+
 export default function DepartmentRemoveAccessModal({
   isOpen,
   user,

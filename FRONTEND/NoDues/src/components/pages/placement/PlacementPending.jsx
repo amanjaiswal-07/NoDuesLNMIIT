@@ -1,3 +1,10 @@
+/**
+ * PlacementPending.jsx — Placement Office "Pending Requests" tab. Students waiting for Placement Office's clearance.
+ * Approve (one or selected), Put On Hold (reason + mandatory details, shown to the student) or open
+ * View details (student info, timeline, prerequisites and the documents Placement Office needs).
+ * Placement sees the student's placement status, TPC email date and placement documents.
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

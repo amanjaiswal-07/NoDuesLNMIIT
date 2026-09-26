@@ -34,6 +34,9 @@ function extractPublicId(url) {
     return match ? match[1] : null;
 }
 
+/**
+ * Backs up and (with --apply) deletes all application data; dry run by default.
+ */
 async function run() {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log(`Connected to MongoDB — ${APPLY ? 'APPLY mode (DELETING)' : 'DRY RUN (no changes)'}\n`);

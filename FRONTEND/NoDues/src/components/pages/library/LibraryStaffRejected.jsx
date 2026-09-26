@@ -1,3 +1,10 @@
+/**
+ * LibraryStaffRejected.jsx — Central Library - Staff "Requests On Hold" tab. Students Central Library - Staff put on hold; they stay here until the
+ * student fixes the issue and reapplies. "Move to Approved" clears them directly (only if every
+ * prerequisite is already approved).
+ * First library step. Approving here is "Move to Librarian".
+ */
+
 import { useOutletContext } from "react-router-dom";
 import { useState } from "react";
 import RejectedRequests from "../../Request/RejectedRequests";

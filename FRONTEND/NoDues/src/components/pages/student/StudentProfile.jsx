@@ -1,3 +1,10 @@
+/**
+ * StudentProfile.jsx — the student's profile form (/student/profile): personal details, ID card,
+ * club/fest role, placement details and documents, library details, and refund / bank details.
+ * Editable only before applying or while On Hold (the backend enforces this too). Once every
+ * department has approved, it shows the "Download No Dues Certificate" card.
+ */
+
 import { useMemo, useState, useCallback } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import api from "../../../api/client";

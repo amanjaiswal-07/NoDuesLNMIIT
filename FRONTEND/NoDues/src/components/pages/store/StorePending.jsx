@@ -1,3 +1,10 @@
+/**
+ * StorePending.jsx — Store "Pending Requests" tab. Students waiting for Store's clearance.
+ * Approve (one or selected), Put On Hold (reason + mandatory details, shown to the student) or open
+ * View details (student info, timeline, prerequisites and the documents Store needs).
+ * Store waits for the student's HOD and Warden. When putting on hold, Store may choose to also reset the HOD and/or Warden on reapply.
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

@@ -1,3 +1,8 @@
+/**
+ * DepartmentHome.jsx — shared landing card for department dashboards: title, short description
+ * and pending count, with room for extra content (usually DepartmentAccessManager).
+ */
+
 export default function DepartmentHome({
   deptName,
   pendingCount = 0,

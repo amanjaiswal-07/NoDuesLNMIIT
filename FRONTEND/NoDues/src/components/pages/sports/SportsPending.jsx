@@ -1,3 +1,9 @@
+/**
+ * SportsPending.jsx — Sports Officer "Pending Requests" tab. Students waiting for Sports Officer's clearance.
+ * Approve (one or selected), Put On Hold (reason + mandatory details, shown to the student) or open
+ * View details (student info, timeline, prerequisites and the documents Sports Officer needs).
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

@@ -1,3 +1,8 @@
+/**
+ * RejectModal.jsx — the "Put On Hold" dialog used by every department: reason, mandatory details
+ * (shown to the student) and, for HOD / NAD / Store / Accounts, which departments to reset on reapply.
+ */
+
 import { useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 

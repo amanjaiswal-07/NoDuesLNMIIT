@@ -1,3 +1,8 @@
+/**
+ * HostelGuard.jsx — shows "select a hostel first" instead of a list until the Warden has picked
+ * a hostel on their dashboard.
+ */
+
 export default function HostelGuard({ selectedHostel, children }) {
   if (!selectedHostel) {
     return (

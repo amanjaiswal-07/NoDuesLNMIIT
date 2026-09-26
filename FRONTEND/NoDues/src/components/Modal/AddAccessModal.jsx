@@ -1,3 +1,7 @@
+/**
+ * AddAccessModal.jsx — admin dialog to give an email ID access to a section (name, email, route).
+ */
+
 export default function AddAccessModal({
   isOpen,
   formData,

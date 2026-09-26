@@ -1,3 +1,8 @@
+/**
+ * StudentHome.jsx — student dashboard (/student): profile status, whether they can apply, and the
+ * current application's status (with a shortcut to Reapply when it is On Hold).
+ */
+
 import { useNavigate, useOutletContext } from "react-router-dom";
 import HowToApply from "./HowToApply";
 

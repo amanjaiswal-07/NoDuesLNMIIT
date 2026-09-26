@@ -1,3 +1,8 @@
+/**
+ * RejectedRequests.jsx — shared "Requests On Hold" list: search, select, View details and
+ * "Move to Approved" (the backend only allows it once the step's prerequisites are approved).
+ */
+
 import { useMemo, useState } from "react";
 import { EyeIcon, ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
 import StudentRow from "./StudentRow";

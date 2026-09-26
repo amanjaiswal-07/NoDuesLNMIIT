@@ -1,3 +1,9 @@
+/**
+ * NadHome.jsx — NAD Cell home page (/nad): pending count and the Department Access table where
+ * NAD Cell staff manage who may open this section.
+ * NAD waits for the student's HOD. Putting a request on hold requires choosing the HOD to reset on reapply.
+ */
+
 // import { useOutletContext } from "react-router-dom";
 // import DepartmentHome from "../../Home/DepartmentHome";
 

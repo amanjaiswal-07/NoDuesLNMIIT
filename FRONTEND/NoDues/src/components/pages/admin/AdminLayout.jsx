@@ -1,3 +1,9 @@
+/**
+ * AdminLayout.jsx — frame of the admin panel (/admin/*): sidebar (Dashboard, Department Access,
+ * Eligible Students, Applications), page title bar and Logout.
+ * Desktop: the sidebar can collapse to icons. Phones: it becomes a slide-in menu opened with ☰.
+ */
+
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   HomeIcon,

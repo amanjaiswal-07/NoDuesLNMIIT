@@ -1,3 +1,8 @@
+/**
+ * index.css — global styles: loads Tailwind CSS and defines the small `no-scrollbar` utility used by
+ * the sideways-scrolling tab strips on phones.
+ */
+
 @import "tailwindcss";
 /* Horizontal tab strips on phones: scrollable without a visible scrollbar */
 @utility no-scrollbar {

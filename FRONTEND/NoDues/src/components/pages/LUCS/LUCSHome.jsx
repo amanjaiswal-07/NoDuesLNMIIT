@@ -1,3 +1,8 @@
+/**
+ * LUCSHome.jsx — LUCS home page (/lucs): pending count and the Department Access table where
+ * LUCS staff manage who may open this section.
+ */
+
 // import { useOutletContext } from "react-router-dom";
 // import DepartmentHome from "../../Home/DepartmentHome";
 

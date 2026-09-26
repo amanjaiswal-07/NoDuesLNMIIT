@@ -1,3 +1,8 @@
+/**
+ * DashboardDetailsModal.jsx — the list behind a dashboard card (who, roll number, branch, when…),
+ * with search and a shortcut to the Applications page. CARD_CONFIG defines the columns per card.
+ */
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";

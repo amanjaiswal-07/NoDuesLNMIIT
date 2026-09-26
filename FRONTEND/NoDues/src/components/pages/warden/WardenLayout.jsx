@@ -1,3 +1,8 @@
+/**
+ * WardenLayout.jsx — Warden In Charge section (/warden). Loads the 'warden' steps and filters every
+ * list by the hostel picked on the home page; the header badge counts only that hostel.
+ */
+
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import DepartmentLayout from "../../shared/DepartmentLayout";

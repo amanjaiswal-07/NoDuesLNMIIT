@@ -1,3 +1,10 @@
+/**
+ * HODRejected.jsx — Head of Department "Requests On Hold" tab. Students Head of Department put on hold; they stay here until the
+ * student fixes the issue and reapplies. "Move to Approved" clears them directly (only if every
+ * prerequisite is already approved).
+ * A student's request goes only to their own branch HOD, after all their labs, LUCS and the Librarian approved. When putting on hold the HOD may reset specific labs, LUCS or Library on reapply.
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

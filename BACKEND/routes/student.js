@@ -1,3 +1,8 @@
+/**
+ * student.js routes — /api/student, used by the student portal.
+ * Requires a student token. Upload routes run multer (config/multer.js) to send files to Cloudinary.
+ */
+
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middleware/verifyToken');

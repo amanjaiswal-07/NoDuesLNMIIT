@@ -1,3 +1,8 @@
+/**
+ * ApprovedRequests.jsx — shared "Approved" list: search, select, View details and
+ * "Move to On Hold" for students this department has already cleared.
+ */
+
 import { useMemo, useState } from "react";
 import { EyeIcon, ArrowRightCircleIcon } from "@heroicons/react/24/outline";
 import StudentRow from "./StudentRow";

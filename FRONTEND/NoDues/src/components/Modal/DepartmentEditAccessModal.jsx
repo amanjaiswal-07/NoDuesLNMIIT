@@ -1,3 +1,7 @@
+/**
+ * DepartmentEditAccessModal.jsx — department staff dialog to rename / change the email of someone in their department.
+ */
+
 export default function DepartmentEditAccessModal({
     isOpen,
     formData,

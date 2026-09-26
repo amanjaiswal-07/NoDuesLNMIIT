@@ -1,3 +1,9 @@
+/**
+ * LabsHome.jsx — lab group landing page (/labs/:department). Staff pick which lab they are working
+ * on (the dropdown shows each lab's pending count); the header badge and every list then show only
+ * that lab. Also shows this lab group's Department Access table.
+ */
+
 import { useOutletContext, useNavigate } from "react-router-dom";
 import DepartmentAccessManager from "../../Home/DepartmentAccessManager";
 

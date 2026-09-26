@@ -1,3 +1,7 @@
+/**
+ * EditEligibleStudentModal.jsx — admin dialog to correct an eligible student's name, email, roll number or branch.
+ */
+
 import { BRANCHES } from "../../config/branches";
 
 export default function EditEligibleStudentModal({

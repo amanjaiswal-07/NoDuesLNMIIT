@@ -1,3 +1,9 @@
+/**
+ * cloudinary.js — configured Cloudinary SDK (credentials come from environment variables).
+ * Used by config/multer.js for uploads, and by the student controller / maintenance scripts
+ * to delete files that are replaced or no longer needed.
+ */
+
 const cloudinary = require('cloudinary').v2;
 
 cloudinary.config({

@@ -1,3 +1,9 @@
+/**
+ * AdminApplications.jsx — every student application in one table (/admin/applications):
+ * filter by status, search (application number, name, roll, email, branch), progress, where it is
+ * pending, who put it on hold and why; expand a row to see every department's step.
+ */
+
 import { useState, useEffect } from "react";
 import api from "../../../api/client";
 import { format } from "date-fns";

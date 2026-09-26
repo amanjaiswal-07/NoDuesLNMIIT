@@ -1,3 +1,15 @@
+/**
+ * app.js — builds the Express application (no listening here; see server.js).
+ * Order matters:
+ *   1. helmet (security headers) and CORS (only the Vercel site and local dev may call the API;
+ *      Content-Disposition is exposed so the browser can read download file names)
+ *   2. JSON / form body parsing, then stripOperators(), which removes "$…" and dotted keys from
+ *      body/query/params so client input can never become a MongoDB operator (NoSQL injection)
+ *   3. API routes: /api/auth, /api/admin, /api/student, /api/clearance
+ *   4. 404 handler and the global error handler (upload errors → 400; unexpected errors → a
+ *      generic 500 so internal details are never sent to the browser)
+ */
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');

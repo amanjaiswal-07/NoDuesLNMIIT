@@ -1,3 +1,10 @@
+/**
+ * Header.jsx — top bar of every department dashboard.
+ * Shows the department name, the Pending / Approved / On Hold tabs (with the pending count badge)
+ * and Logout. Phones & laptops: name + Logout on top, tabs underneath (scroll sideways);
+ * wide screens: one row. Library Staff renames its second tab to "Sent Requests" via props.
+ */
+
 import { NavLink, useNavigate, Link } from "react-router-dom";
 import {
   ClockIcon,

@@ -1,3 +1,9 @@
+/**
+ * auth.js routes — /api/auth
+ *   POST /google  exchange a Google credential for our JWT (public)
+ *   GET  /me      current user (token required)
+ */
+
 const express = require('express');
 const router = express.Router();
 const { googleLogin, getMe } = require('../controllers/auth.controller');

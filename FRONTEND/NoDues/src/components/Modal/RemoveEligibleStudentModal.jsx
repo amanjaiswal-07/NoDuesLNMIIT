@@ -1,3 +1,7 @@
+/**
+ * RemoveEligibleStudentModal.jsx — confirmation before removing one student from the eligible list.
+ */
+
 export default function RemoveEligibleStudentModal({
   isOpen,
   student,

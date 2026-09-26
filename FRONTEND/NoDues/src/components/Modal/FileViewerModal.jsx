@@ -1,3 +1,7 @@
+/**
+ * FileViewerModal.jsx — lets a student view their own uploaded documents on the Profile page (details below).
+ */
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import api from "../../api/client";
 

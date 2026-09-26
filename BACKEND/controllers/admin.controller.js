@@ -1,3 +1,15 @@
+/**
+ * admin.controller.js — everything behind /api/admin (admin permission required).
+ * Sections:
+ *   • Eligible students — list / add / edit / remove / bulk CSV import / bulk remove. Branches are
+ *     validated (CSE, ECE, CCE, MECH); unknown branches are rejected or skipped with a reason.
+ *   • Staff access — list / add / update / remove permission codes on User records.
+ *   • Dashboard — getDashboardStats (card numbers + department overview) and
+ *     getDashboardDetails (who is behind each card).
+ *   • Applications — buildApplicationRows (progress, where it is pending, who put it on hold),
+ *     listApplications and getApplicationDetails for the admin Applications page.
+ */
+
 const EligibleStudent = require('../models/EligibleStudent');
 const User = require('../models/User');
 const NoDuesRequest = require('../models/NoDuesRequest');

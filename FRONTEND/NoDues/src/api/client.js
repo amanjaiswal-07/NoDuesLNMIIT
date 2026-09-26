@@ -1,3 +1,10 @@
+/**
+ * client.js — the shared axios instance for all API calls.
+ * Adds the saved JWT to every request. Only a 401 (session no longer valid — expired or access
+ * removed) logs the user out and returns to the login page with the reason; network errors and
+ * 5xx responses are left to each page so a hiccup never signs anyone out.
+ */
+
 import axios from 'axios';
 
 const api = axios.create({

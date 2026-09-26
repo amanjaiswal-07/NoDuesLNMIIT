@@ -1,3 +1,9 @@
+/**
+ * requirePermission.js — permission guards built on config/permissionCodes.js:
+ * requirePermission(code) for whole routers (e.g. admin) and attachPermissionChecker, which gives
+ * department handlers req.hasPermissionFor(unitCode) (details below).
+ */
+
 const { resolvePermittedUnitCodes } = require('../config/permissionCodes');
 
 /**

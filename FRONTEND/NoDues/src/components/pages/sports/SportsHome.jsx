@@ -1,3 +1,8 @@
+/**
+ * SportsHome.jsx — Sports Officer home page (/sports): pending count and the Department Access table where
+ * Sports Officer staff manage who may open this section.
+ */
+
 // import { useOutletContext } from "react-router-dom";
 // import DepartmentHome from "../../Home/DepartmentHome";
 

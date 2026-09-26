@@ -1,3 +1,9 @@
+/**
+ * EligibleStudent.js — the admin-managed list of students allowed to apply, plus each student's
+ * profile (contact, hostel, placement, library, club/fest role, bank/refund details) and the
+ * Cloudinary URLs of their uploaded documents. Only students on this list can sign in.
+ */
+
 const mongoose = require('mongoose');
 
 const eligibleStudentSchema = new mongoose.Schema(

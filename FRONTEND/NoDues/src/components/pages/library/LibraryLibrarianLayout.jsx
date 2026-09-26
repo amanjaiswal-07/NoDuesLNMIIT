@@ -1,3 +1,8 @@
+/**
+ * LibraryLibrarianLayout.jsx — Central Library Librarian section (/library/librarian). Second library
+ * step: a request reaches the Librarian only after Library Staff approved it.
+ */
+
 import { Outlet } from "react-router-dom";
 import DepartmentLayout from "../../shared/DepartmentLayout";
 

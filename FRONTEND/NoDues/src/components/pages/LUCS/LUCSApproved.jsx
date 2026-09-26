@@ -1,3 +1,8 @@
+/**
+ * LUCSApproved.jsx — LUCS "Approved Requests" tab. Students LUCS has cleared; one can be moved back
+ * to On Hold with a reason (not once the whole application is complete — the backend refuses).
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

@@ -1,3 +1,9 @@
+/**
+ * StepActionLog.js — the timeline. One entry per event on a step: created, unlocked, approved,
+ * rejected (on hold, with "[reason] details"), reapply / student_replied (with the student's comment
+ * and proof files), reopened, relocked. Shown on the student's Track page and in "View details".
+ */
+
 const mongoose = require('mongoose');
 
 // Append-only audit trail for every state change on a ClearanceStep.

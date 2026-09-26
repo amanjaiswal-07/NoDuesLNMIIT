@@ -1,3 +1,7 @@
+/**
+ * RemoveAccessModal.jsx — admin confirmation before removing a staff member's access to a section.
+ */
+
 export default function RemoveAccessModal({
   isOpen,
   user,

@@ -1,3 +1,18 @@
+/**
+ * student.controller.js — everything a student does (/api/student, student token required).
+ *   • Profile: getProfile / updateProfile. The profile is editable only before applying or while On
+ *     Hold (getProfileLock); files replaced or made obsolete (e.g. placement status change) are deleted
+ *     from Cloudinary. profileCompleted is recomputed on every save.
+ *   • Apply: applyForNoDues creates the NoDuesRequest (with a readable application number
+ *     ND-<year>-<ROLL>) and all clearance steps via services/workflowService.js.
+ *   • Track: getActiveRequest, getRequestSteps, getRequestLogs (timeline).
+ *   • Reapply: reapply resets the steps that were put on hold — or the departments the holder chose
+ *     to reset — records the student's comment/proof, and tells reset departments why.
+ *   • Files: getStudentFile, getReapplyProof, getMyLogProof stream documents through the backend
+ *     after checking the student owns them.
+ *   • Certificate: getCertificate returns the filled No Dues form PDF once every department approved.
+ */
+
 const https = require('https');
 const http = require('http');
 const { URL } = require('url');
@@ -251,6 +266,12 @@ async function getProfile(req, res) {
     }
 }
 
+/**
+ * POST /api/student/profile (multipart)
+ * Saves the whitelisted profile fields and any uploaded documents. Refused while the profile is
+ * locked (files that were already uploaded are deleted again). Replaced or obsolete files are
+ * removed from Cloudinary and profileCompleted is recomputed.
+ */
 async function updateProfile(req, res) {
     try {
         const student = await EligibleStudent.findOne({ email: req.user.email });
@@ -558,6 +579,9 @@ async function getActiveRequest(req, res) {
     }
 }
 
+/**
+ * GET /api/student/request/:requestId/steps — every department step of the student's own request.
+ */
 async function getRequestSteps(req, res) {
     try {
         const { requestId } = req.params;
@@ -607,6 +631,14 @@ async function replyToRejectedStep(req, res) {
     }
 }
 
+/**
+ * POST /api/student/reapply (optional comment + one proof file)
+ * For every step on hold: if the holder chose departments to reset, those go back to pending and the
+ * holder waits (re-locked with restartFrom = what it waits for); otherwise the held step itself goes
+ * back to pending. A Librarian hold restarts from Library Staff. Reset departments get a timeline note
+ * saying why, with the student's comment and document. Finally dependents are re-locked and the
+ * request returns to in_progress.
+ */
 async function reapply(req, res) {
     try {
         // Find most-recent active (non-fully-approved) request for this student

@@ -1,3 +1,9 @@
+/**
+ * LabsApproved.jsx — Lab group "Approved Requests" tab. Students Lab group has cleared; one can be moved back
+ * to On Hold with a reason (not once the whole application is complete — the backend refuses).
+ * Lists are filtered by the lab chosen on the lab group's home page. Kundan's lab (Final Approval ECE) exists only for ECE students.
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

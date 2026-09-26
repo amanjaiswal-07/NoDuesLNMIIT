@@ -1,3 +1,9 @@
+/**
+ * LibraryStaffLayout.jsx — Central Library Staff section (/library/staff). First library step:
+ * staff "Move to Librarian" (approve), and the second tab is renamed "Sent Requests" to follow
+ * what the Librarian did with them.
+ */
+
 import { Outlet } from "react-router-dom";
 import DepartmentLayout from "../../shared/DepartmentLayout";
 

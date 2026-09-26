@@ -1,3 +1,8 @@
+/**
+ * eslint.config.js — lint rules for the frontend (React hooks + fast-refresh rules).
+ * Run: npx eslint src
+ */
+
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'

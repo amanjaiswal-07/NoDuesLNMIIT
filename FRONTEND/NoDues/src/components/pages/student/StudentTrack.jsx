@@ -1,3 +1,10 @@
+/**
+ * StudentTrack.jsx — follow the application (/student/track): overall status, application number,
+ * progress, and every department's step with its timeline. When something is On Hold it shows the
+ * reasons and the Reapply form (optional comment + proof document). Documents attached to timeline
+ * events open through the backend.
+ */
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useOutletContext } from "react-router-dom";
 import api from "../../../api/client";

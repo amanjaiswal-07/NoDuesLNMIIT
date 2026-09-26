@@ -1,3 +1,10 @@
+/**
+ * NoDuesRequest.js — one No Dues application.
+ * Holds a snapshot of the student's details at apply time, the readable applicationNo, and the
+ * overall status: 'in_progress' → 'action_required' (some department put it on hold) → 'approved'
+ * (every department cleared it; completedAt set). The per-department state lives in ClearanceStep.
+ */
+
 const mongoose = require('mongoose');
 
 const noDuesRequestSchema = new mongoose.Schema(

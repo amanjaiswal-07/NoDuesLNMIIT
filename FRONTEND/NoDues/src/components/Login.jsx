@@ -1,3 +1,10 @@
+/**
+ * Login.jsx — the sign-in page (/).
+ * The user picks who they are signing in as (Student, Admin, a department…) and continues with
+ * Google. The backend checks that choice against their permissions and replies with a token and
+ * the page to open. Shows a notice left by api/client.js when a session was ended.
+ */
+
 import { useEffect, useState, useLayoutEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import GoogleSignInButton from './GoogleSignInButton';

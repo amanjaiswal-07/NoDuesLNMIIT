@@ -1,3 +1,9 @@
+/**
+ * StoreApproved.jsx — Store "Approved Requests" tab. Students Store has cleared; one can be moved back
+ * to On Hold with a reason (not once the whole application is complete — the backend refuses).
+ * Store waits for the student's HOD and Warden. When putting on hold, Store may choose to also reset the HOD and/or Warden on reapply.
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

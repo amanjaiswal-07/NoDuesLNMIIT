@@ -1,3 +1,10 @@
+/**
+ * LabsRejected.jsx — Lab group "Requests On Hold" tab. Students Lab group put on hold; they stay here until the
+ * student fixes the issue and reapplies. "Move to Approved" clears them directly (only if every
+ * prerequisite is already approved).
+ * Lists are filtered by the lab chosen on the lab group's home page. Kundan's lab (Final Approval ECE) exists only for ECE students.
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

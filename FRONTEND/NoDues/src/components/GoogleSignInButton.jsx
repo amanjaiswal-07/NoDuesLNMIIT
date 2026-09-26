@@ -1,3 +1,10 @@
+/**
+ * GoogleSignInButton.jsx — draws Google's "Continue with Google" button.
+ * Google's script must be initialised only once per page load (otherwise it logs warnings and only
+ * the last setup counts), so this initialises once and afterwards only re-draws the button — e.g.
+ * when returning to the login page or when the card width changes.
+ */
+
 import { useEffect, useRef } from "react";
 import { useGoogleOAuth } from "@react-oauth/google";
 

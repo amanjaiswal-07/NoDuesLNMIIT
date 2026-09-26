@@ -1,3 +1,8 @@
+/**
+ * AddEligibleStudentModal.jsx — admin dialog to add one student to the eligible list (name, email,
+ * roll number, branch from the fixed CSE / ECE / CCE / MECH list).
+ */
+
 import { BRANCHES } from "../../config/branches";
 
 export default function AddEligibleStudentModal({

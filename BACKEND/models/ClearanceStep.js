@@ -1,3 +1,11 @@
+/**
+ * ClearanceStep.js — one department's part of an application (e.g. Medical, CSE Lab-1, HOD - ECE).
+ * status: 'locked' (waiting for prerequisites) → 'pending' → 'approved' or 'rejected' (on hold).
+ * dependsOn is fixed when the application is created (from config/workflowConfig.js).
+ * restartFrom holds the departments a hold asked to reset; after a reapply it also lists what the
+ * re-locked step is still waiting for (see services/dependencyEngine.js).
+ */
+
 const mongoose = require('mongoose');
 
 const clearanceStepSchema = new mongoose.Schema(

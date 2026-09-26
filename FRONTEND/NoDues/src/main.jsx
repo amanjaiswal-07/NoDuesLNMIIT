@@ -1,3 +1,14 @@
+/**
+ * main.jsx — frontend entry point and the full route map.
+ * Wraps the app in GoogleOAuthProvider (Google sign-in) and defines every page:
+ *   /                    login
+ *   /student/*           student portal (dashboard, profile, apply, track, history)
+ *   /admin/*             admin panel
+ *   /medical, /sports, /store, /administration, /nad, /accounts, /warden, /placement, /lucs,
+ *   /labs/:department, /hod/:department, /library/staff|librarian   department dashboards
+ * All protected pages sit inside PrivateRoute; unknown addresses redirect to the login page.
+ */
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'

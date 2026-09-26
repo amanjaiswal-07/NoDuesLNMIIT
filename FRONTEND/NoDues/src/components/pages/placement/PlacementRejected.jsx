@@ -1,3 +1,10 @@
+/**
+ * PlacementRejected.jsx — Placement Office "Requests On Hold" tab. Students Placement Office put on hold; they stay here until the
+ * student fixes the issue and reapplies. "Move to Approved" clears them directly (only if every
+ * prerequisite is already approved).
+ * Placement sees the student's placement status, TPC email date and placement documents.
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

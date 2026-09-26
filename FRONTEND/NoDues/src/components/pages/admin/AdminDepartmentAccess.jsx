@@ -1,3 +1,8 @@
+/**
+ * AdminDepartmentAccess.jsx — admin view of all staff access (/admin/department-access): one row per
+ * person per section, with add / edit / remove.
+ */
+
 import { useState, useEffect } from "react";
 import AddAccessModal from "../../Modal/AddAccessModal";
 import EditAccessModal from "../../Modal/EditAccessModal";

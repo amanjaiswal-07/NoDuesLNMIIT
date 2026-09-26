@@ -1,3 +1,9 @@
+/**
+ * db.js — opens the MongoDB (Atlas) connection using MONGODB_URI.
+ * Called once from server.js before the app starts listening; exits the process if the
+ * database is unreachable so Render restarts it instead of serving broken requests.
+ */
+
 const mongoose = require('mongoose');
 
 const connectDB = async () => {

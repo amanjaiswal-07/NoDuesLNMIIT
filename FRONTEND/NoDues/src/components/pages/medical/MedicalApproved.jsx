@@ -1,3 +1,8 @@
+/**
+ * MedicalApproved.jsx — Medical Officer "Approved Requests" tab. Students Medical Officer has cleared; one can be moved back
+ * to On Hold with a reason (not once the whole application is complete — the backend refuses).
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

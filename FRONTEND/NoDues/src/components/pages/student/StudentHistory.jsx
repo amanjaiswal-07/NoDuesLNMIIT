@@ -1,3 +1,7 @@
+/**
+ * StudentHistory.jsx — list of the student's applications with their outcome (/student/history).
+ */
+
 import { useState, useEffect } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import api from "../../../api/client";

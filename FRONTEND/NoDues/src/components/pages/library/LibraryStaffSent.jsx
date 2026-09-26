@@ -1,3 +1,8 @@
+/**
+ * LibraryStaffSent.jsx — Library Staff's "Sent Requests" tab: students passed to the Librarian with
+ * the Librarian's current status (Pending / Approved / On Hold, with the reason on hover).
+ */
+
 import { useOutletContext } from "react-router-dom";
 import { useState } from "react";
 import { EyeIcon } from "@heroicons/react/24/outline";

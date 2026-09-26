@@ -1,3 +1,9 @@
+/**
+ * LibraryLibrarianApproved.jsx — Central Library - Librarian "Approved Requests" tab. Students Central Library - Librarian has cleared; one can be moved back
+ * to On Hold with a reason (not once the whole application is complete — the backend refuses).
+ * Second library step (after Library Staff). A Librarian hold restarts the library chain from Library Staff on reapply.
+ */
+
 import { useOutletContext } from "react-router-dom";
 import { useState } from "react";
 import { EyeIcon, XCircleIcon } from "@heroicons/react/24/outline";

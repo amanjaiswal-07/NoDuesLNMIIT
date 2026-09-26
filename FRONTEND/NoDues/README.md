@@ -1,16 +1,21 @@
-# React + Vite
+# No Dues Portal — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite + Tailwind CSS single-page app, deployed on Vercel. See the root `README.md` for the
+whole project, the approval flow and environment variables.
 
-Currently, two official plugins are available:
+```bash
+npm install
+npm run dev      # http://localhost:5173 (needs .env with VITE_API_URL and VITE_GOOGLE_CLIENT_ID)
+npm run lint
+npm run build
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Where things are:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `src/main.jsx` — every route / page
+- `src/api/client.js` — API calls (adds the login token; a 401 returns to the login page)
+- `src/components/Login.jsx`, `GoogleSignInButton.jsx` — sign-in
+- `src/components/pages/<section>/` — student portal, admin panel and each department's dashboard
+- `src/components/Request/` — the shared Pending / Approved / On Hold lists
+- `src/components/Modal/` — dialogs (details, put on hold, confirmations, access management)
+- `vercel.json` — sends every path to `index.html` and sets the sign-in popup header

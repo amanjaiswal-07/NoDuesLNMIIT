@@ -1,3 +1,8 @@
+/**
+ * WardenHome.jsx — Warden landing page: pick a hostel (BH1–BH5, GH; the dropdown shows pending
+ * counts), then open its pending list. Also the Department Access table.
+ */
+
 import { useOutletContext, useNavigate } from "react-router-dom";
 import DepartmentAccessManager from "../../Home/DepartmentAccessManager";
 

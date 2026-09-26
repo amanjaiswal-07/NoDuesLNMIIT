@@ -1,3 +1,9 @@
+/**
+ * PlacementHome.jsx — Placement Office home page (/placement): pending count and the Department Access table where
+ * Placement Office staff manage who may open this section.
+ * Placement sees the student's placement status, TPC email date and placement documents.
+ */
+
 // import { useOutletContext } from "react-router-dom";
 // import DepartmentHome from "../../Home/DepartmentHome";
 

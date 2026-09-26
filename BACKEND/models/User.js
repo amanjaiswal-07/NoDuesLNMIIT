@@ -1,3 +1,9 @@
+/**
+ * User.js — anyone who can sign in: students, department staff and admins.
+ * permissionCodes decides what they can open (e.g. ['student'], ['medical'], ['labs_cse_cce'],
+ * ['admin']); one person can hold several. See config/permissionCodes.js for the full list.
+ */
+
 const mongoose = require('mongoose');
 
 /**

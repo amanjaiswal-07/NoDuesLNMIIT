@@ -1,3 +1,10 @@
+/**
+ * LibraryStaffPending.jsx — Central Library - Staff "Pending Requests" tab. Students waiting for Central Library - Staff's clearance.
+ * Approve (one or selected), Put On Hold (reason + mandatory details, shown to the student) or open
+ * View details (student info, timeline, prerequisites and the documents Central Library - Staff needs).
+ * First library step. Approving here is "Move to Librarian".
+ */
+
 import { useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import PendingRequests from "../../Request/PendingRequests";

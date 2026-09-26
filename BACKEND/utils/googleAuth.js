@@ -1,3 +1,9 @@
+/**
+ * googleAuth.js — verifies the Google ID token sent by the login page.
+ * Checks it was issued for our GOOGLE_CLIENT_ID and that the email is verified by Google, because
+ * access is granted by matching that email against our User / EligibleStudent records.
+ */
+
 const { OAuth2Client } = require('google-auth-library');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);

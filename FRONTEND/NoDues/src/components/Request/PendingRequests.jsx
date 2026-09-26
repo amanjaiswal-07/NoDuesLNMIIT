@@ -1,3 +1,9 @@
+/**
+ * PendingRequests.jsx — shared "Pending" list used by every department.
+ * Search, select-all + "Approve Selected", and one StudentRow per student with Approve / Put On Hold /
+ * View details (labels and extra buttons are configurable, e.g. Library Staff's "Move to Librarian").
+ */
+
 import { useMemo, useState } from "react";
 import {
   CheckCircleIcon,

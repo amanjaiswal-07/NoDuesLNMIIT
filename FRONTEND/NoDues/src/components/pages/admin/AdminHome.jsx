@@ -1,3 +1,9 @@
+/**
+ * AdminHome.jsx — admin dashboard (/admin). Six clickable cards (authorised users, eligible students,
+ * profiles completed, active / on-hold / completed applications) that open DashboardDetailsModal,
+ * plus quick links and a per-department overview of pending and on-hold counts.
+ */
+
 import { useEffect, useState } from "react";
 import api from "../../../api/client";
 import DashboardDetailsModal from "./DashboardDetailsModal";

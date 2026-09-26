@@ -1,3 +1,10 @@
+/**
+ * LabsPending.jsx — Lab group "Pending Requests" tab. Students waiting for Lab group's clearance.
+ * Approve (one or selected), Put On Hold (reason + mandatory details, shown to the student) or open
+ * View details (student info, timeline, prerequisites and the documents Lab group needs).
+ * Lists are filtered by the lab chosen on the lab group's home page. Kundan's lab (Final Approval ECE) exists only for ECE students.
+ */
+
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 

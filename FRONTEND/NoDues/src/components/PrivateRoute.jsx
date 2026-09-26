@@ -1,3 +1,10 @@
+/**
+ * PrivateRoute.jsx — front-door check for every protected page.
+ * Reads the saved user and decides whether the current URL is allowed (students only in /student,
+ * admins everywhere, staff only in the sections of their permission codes); otherwise redirects.
+ * This is a convenience for the UI — the backend enforces the same rules on every API call.
+ */
+
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 const ROUTE_TO_PERMISSION = {
