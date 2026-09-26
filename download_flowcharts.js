@@ -1,3 +1,9 @@
+/**
+ * download_flowcharts.js — documentation helper (not part of the app).
+ * Reads the Mermaid diagrams in Flowcharts.md and downloads PNG renders of them (the *.png files in
+ * the repo root). Run: node download_flowcharts.js
+ */
+
 const fs = require('fs');
 const https = require('https');
 const zlib = require('zlib');
