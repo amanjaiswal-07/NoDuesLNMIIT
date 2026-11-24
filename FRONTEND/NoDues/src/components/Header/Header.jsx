@@ -50,8 +50,8 @@ export default function Header({
   const title = titleProp || ROLE_TITLES[role] || role;
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("user");
     navigate("/");
   };
 

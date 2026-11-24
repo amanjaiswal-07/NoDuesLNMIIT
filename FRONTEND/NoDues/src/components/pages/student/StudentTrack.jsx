@@ -517,8 +517,8 @@ export default function StudentTrack() {
         setError("Your session token is outdated. Please log out and log back in to refresh your session.");
       } else if (status === 401) {
         // Token genuinely missing — redirect to login explicitly here (no global interceptor).
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
         window.location.href = '/';
         return;
       } else {

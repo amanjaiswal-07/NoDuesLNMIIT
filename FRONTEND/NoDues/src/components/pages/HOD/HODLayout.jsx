@@ -18,7 +18,7 @@ const HOD_CODES = Object.keys(HOD_LABELS);
 
 export default function HODLayout() {
   const { department } = useParams();
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const user = JSON.parse(sessionStorage.getItem("user") || "{}");
   const fromUrl = `hod_${(department || "").toLowerCase()}`;
   const hodCode = HOD_CODES.includes(fromUrl)
     ? fromUrl

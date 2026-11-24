@@ -20,8 +20,8 @@ import api from "../../../api/client";
 
 export default function StudentLayout() {
   const navigate = useNavigate();
-  // Get user info from localStorage (set by Google Login)
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  // Get user info from sessionStorage (set by Google Login)
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
   const email = user?.email || "";
 
   const [studentProfile, setStudentProfile] = useState(null);
@@ -42,8 +42,8 @@ export default function StudentLayout() {
         profileRes = await api.get('/student/profile');
       } catch (profileErr) {
         if (profileErr.response?.status === 401) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
           navigate('/');
           return;
         }
@@ -85,8 +85,8 @@ export default function StudentLayout() {
     }
     if (user?.role && user.role !== 'student') {
       // A staff/admin token leaked into the student section — clear and redirect.
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
       navigate('/');
       return;
     }
@@ -99,8 +99,8 @@ export default function StudentLayout() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("user");
     navigate("/");
   };
 
