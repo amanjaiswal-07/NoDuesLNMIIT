@@ -85,8 +85,8 @@ const Login = () => {
 
       const { token, user } = res.data;
 
-      sessionStorage.setItem("token", token);
-      sessionStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
       // Redirect precisely where the backend tells us

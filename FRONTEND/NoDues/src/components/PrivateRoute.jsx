@@ -31,8 +31,8 @@ const ROUTE_TO_PERMISSION = {
 };
 
 const PrivateRoute = () => {
-    const token = sessionStorage.getItem('token');
-    const userStr = sessionStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
     const location = useLocation();
 
     if (!token || !userStr) {
